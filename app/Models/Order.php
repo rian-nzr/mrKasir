@@ -18,9 +18,17 @@ class Order extends Model
         'phone',
         'birthday',
         'total_price',
+        'paid_amount',
+        'change_amount',
         'note',
         'payment_method_id',
         'store_id',
+    ];
+
+    protected $casts = [
+        'total_price' => 'decimal:2',
+        'paid_amount' => 'decimal:2',
+        'change_amount' => 'decimal:2',
     ];
 
     public function paymentMethod(): BelongsTo

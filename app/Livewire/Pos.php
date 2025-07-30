@@ -12,6 +12,7 @@ use App\Models\Category;
 
 use Filament\Forms\Form;
 use App\Models\OrderProduct;
+use App\Models\PaymentMethodTransaction;
 
 use Livewire\WithPagination;
 use App\Models\PaymentMethod;
@@ -37,6 +38,8 @@ class Pos extends Component implements HasForms
     public $payment_methods;
     public $order_items = [];
     public $total_price;
+    public $paid_amount = 0;
+    public $change_amount = 0;
     public $showConfirmationModal = false;
     public $orderToPrint = null;
 
@@ -77,7 +80,7 @@ class Pos extends Component implements HasForms
     {
         return $form
             ->schema([
-                Forms\Components\Grid::make(2) // Membagi form menjadi 5 kolom
+                Forms\Components\Grid::make(2) // Membagi form menjadi 2 kolom
                     ->schema([
                         // Input Name Customer
                         Forms\Components\TextInput::make('name')
@@ -94,8 +97,33 @@ class Pos extends Component implements HasForms
                             ->required()
                             ->label('Metode Pembayaran')
                             ->options($this->payment_methods->pluck('name', 'id'))
+                            ->live()
+                            ->afterStateUpdated(function () {
+                                $this->calculateChange();
+                            })
                             ->columnSpan(1), // Menggunakan 1 kolom
+                    ]),
+                Forms\Components\Grid::make(2)
+                    ->schema([
+                        // Input Jumlah Dibayar
+                        Forms\Components\TextInput::make('paid_amount')
+                            ->label('Jumlah Dibayar')
+                            ->numeric()
+                            ->prefix('Rp')
+                            ->live()
+                            ->afterStateUpdated(function () {
+                                $this->calculateChange();
+                            })
+                            ->columnSpan(1),
+                        
+                        // Display Kembalian (Read Only)
+                        Forms\Components\TextInput::make('change_amount')
+                            ->label('Kembalian')
+                            ->prefix('Rp')
+                            ->readOnly()
+                            ->columnSpan(1),
                     ])
+                    ->visible(fn () => $this->payment_method_id && count($this->order_items) > 0 && $this->isCashPayment())
             ]);
     }
 
@@ -177,6 +205,7 @@ class Pos extends Component implements HasForms
 
             // Simpan perubahan order ke session
             session()->put('orderItems', $this->order_items);
+            $this->calculateChange(); // Update kembalian setelah item ditambah
 
         }
     }
@@ -220,6 +249,7 @@ class Pos extends Component implements HasForms
         }
 
         session()->put('orderItems', $this->order_items);
+        $this->calculateChange(); // Update kembalian setelah quantity berubah
     }
 
     public function decreaseQuantity($product_id)
@@ -242,6 +272,7 @@ class Pos extends Component implements HasForms
         }
         // Simpan perubahan cart ke session
         session()->put('orderItems', $this->order_items);
+        $this->calculateChange(); // Update kembalian setelah quantity berubah
     }
 
     public function calculateTotal()
@@ -262,6 +293,37 @@ class Pos extends Component implements HasForms
         return $total;
     }
 
+    public function calculateChange()
+    {
+        $total = $this->calculateTotal();
+        $this->change_amount = max(0, $this->paid_amount - $total);
+    }
+
+    public function isCashPayment()
+    {
+        if (!$this->payment_method_id) {
+            return false;
+        }
+        
+        $paymentMethod = PaymentMethod::find($this->payment_method_id);
+        return $paymentMethod && $paymentMethod->is_cash;
+    }
+
+    public function getTotalBalance()
+    {
+        return PaymentMethod::getTotalBalance();
+    }
+
+    public function getFormattedTotalBalance()
+    {
+        return PaymentMethod::getFormattedTotalBalance();
+    }
+
+    public function getBalanceByType()
+    {
+        return PaymentMethod::getBalanceByType();
+    }
+
 
     public function resetOrder()
     {
@@ -272,16 +334,39 @@ class Pos extends Component implements HasForms
         $this->order_items = [];
         $this->payment_method_id = null;
         $this->total_price = 0;
+        $this->paid_amount = 0;
+        $this->change_amount = 0;
     }
 
 
 
     public function checkout()
     {
+        // Hitung total terlebih dahulu
+        $total = $this->calculateTotal();
+        
+        // Validasi dasar terlebih dahulu
         $this->validate([
             'name' => 'string|max:255',
-            'payment_method_id' => 'required'
+            'payment_method_id' => 'required',
         ]);
+        
+        // Ambil payment method untuk pengecekan
+        $paymentMethod = PaymentMethod::find($this->payment_method_id);
+        
+        // Validasi tambahan untuk cash payment
+        if ($paymentMethod && $paymentMethod->is_cash) {
+            $this->validate([
+                'paid_amount' => 'required|numeric|min:' . $total
+            ], [
+                'paid_amount.min' => 'Jumlah yang dibayar tidak boleh kurang dari total belanja',
+                'paid_amount.required' => 'Jumlah yang dibayar wajib diisi untuk pembayaran tunai'
+            ]);
+        } else {
+            // Untuk non-cash, set paid_amount sama dengan total (tidak ada kembalian)
+            $this->paid_amount = $total;
+            $this->change_amount = 0;
+        }
 
         $payment_method_id_temp = $this->payment_method_id;
 
@@ -291,11 +376,16 @@ class Pos extends Component implements HasForms
             ->danger()
             ->send();
         } else {
+            // Buat order
             $order = Order::create([
-            'name' => $this->name,
-            'total_price' => $this->calculateTotal(),
-            'payment_method_id' => $payment_method_id_temp
+                'name' => $this->name,
+                'total_price' => $total,
+                'paid_amount' => $this->paid_amount,
+                'change_amount' => $this->change_amount,
+                'payment_method_id' => $payment_method_id_temp
             ]);
+            
+            // Buat order products
             foreach($this->order_items as $item) {
                 OrderProduct::create([
                     'order_id' => $order->id,
@@ -304,7 +394,29 @@ class Pos extends Component implements HasForms
                     'unit_price' => $item['price']
                 ]);
             }
-             // Simpan ID order untuk cetak
+
+            // Update saldo payment method dan buat transaksi  
+            if ($paymentMethod) {
+                $balanceBefore = $paymentMethod->balance;
+                $balanceAfter = $balanceBefore + $total;
+                
+                // Update balance payment method
+                $paymentMethod->update(['balance' => $balanceAfter]);
+                
+                // Buat record transaksi
+                PaymentMethodTransaction::create([
+                    'to_payment_method_id' => $payment_method_id_temp,
+                    'type' => 'topup',
+                    'amount' => $total,
+                    'balance_before' => $balanceBefore,
+                    'balance_after' => $balanceAfter,
+                    'description' => 'Penjualan - Order #' . $order->id . ' - Customer: ' . $this->name,
+                    'reference_number' => PaymentMethodTransaction::generateReferenceNumber(),
+                    'created_by' => auth()->id(),
+                ]);
+            }
+
+            // Simpan ID order untuk cetak
             $this->orderToPrint = $order->id;
 
             // Tampilkan modal konfirmasi
@@ -315,9 +427,12 @@ class Pos extends Component implements HasForms
             ->success()
             ->send();
 
+            // Reset form
             $this->name = 'umum';
             $this->payment_method_id = null;
             $this->total_price = 0;
+            $this->paid_amount = 0;
+            $this->change_amount = 0;
             $this->order_items = [];
             session()->forget(['orderItems']);
         }

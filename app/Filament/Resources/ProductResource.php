@@ -242,13 +242,45 @@ class ProductResource extends Resource implements HasShieldPermissions
         $barcodes = [];
         $barcodeGenerator = new DNS1D();
 
+        // Validasi records tidak kosong
+        if (empty($records) || !is_iterable($records)) {
+            throw new \Exception('Tidak ada produk yang dipilih atau data tidak valid');
+        }
+
         foreach ($records as $product) {
-            $barcodes[] = [
-                'name' => $product->name,
-                'price' => $product->price,
-                'barcode' => 'data:image/png;base64,' . $barcodeGenerator->getBarcodePNG($product->barcode, 'C128'),
-                'number' => $product->barcode
-            ];
+            // Validasi product tidak null dan memiliki atribut yang diperlukan
+            if (!$product || !$product->name || !$product->barcode) {
+                continue; // Skip produk yang tidak valid
+            }
+
+            try {
+                // Debug: Log data produk
+                \Log::info('Processing product:', [
+                    'name' => $product->name,
+                    'price' => $product->price,
+                    'barcode' => $product->barcode
+                ]);
+
+                $barcodes[] = [
+                    'name' => $product->name ?? 'Nama tidak tersedia',
+                    'price' => $product->price ?? 0,
+                    'barcode' => 'data:image/png;base64,' . $barcodeGenerator->getBarcodePNG($product->barcode, 'C128'),
+                    'number' => $product->barcode
+                ];
+            } catch (\Exception $e) {
+                // Log error untuk debugging
+                \Log::error('Error generating barcode for product:', [
+                    'product_id' => $product->id ?? 'unknown',
+                    'barcode' => $product->barcode ?? 'unknown',
+                    'error' => $e->getMessage()
+                ]);
+                continue;
+            }
+        }
+
+        // Validasi ada barcode yang berhasil digenerate
+        if (empty($barcodes)) {
+            throw new \Exception('Tidak ada barcode yang dapat digenerate. Pastikan produk memiliki barcode yang valid.');
         }
 
         // Generate PDF

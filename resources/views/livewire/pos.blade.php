@@ -1,6 +1,32 @@
 <div class="grid grid-cols-1 md:grid-cols-3 gap-4" style="font-family : poppins;">
     <div class="md:col-span-2">
 
+        <!-- Total Saldo Payment Methods -->
+        <div class="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+            <h3 class="text-lg font-semibold text-blue-800 dark:text-blue-200 mb-2">Total Saldo Semua Metode Pembayaran</h3>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                @php
+                    $balanceByType = $this->getBalanceByType();
+                @endphp
+                <div class="text-center">
+                    <p class="text-sm text-gray-600 dark:text-gray-400">Tunai</p>
+                    <p class="text-lg font-bold text-green-600">Rp {{ number_format($balanceByType['cash'], 0, ',', '.') }}</p>
+                </div>
+                <div class="text-center">
+                    <p class="text-sm text-gray-600 dark:text-gray-400">E-Wallet</p>
+                    <p class="text-lg font-bold text-blue-600">Rp {{ number_format($balanceByType['ewallet'], 0, ',', '.') }}</p>
+                </div>
+                <div class="text-center">
+                    <p class="text-sm text-gray-600 dark:text-gray-400">Transfer</p>
+                    <p class="text-lg font-bold text-purple-600">Rp {{ number_format($balanceByType['transfer'], 0, ',', '.') }}</p>
+                </div>
+                <div class="text-center">
+                    <p class="text-sm text-gray-600 dark:text-gray-400">Total Keseluruhan</p>
+                    <p class="text-xl font-bold text-gray-900 dark:text-white">{{ $this->getFormattedTotalBalance() }}</p>
+                </div>
+            </div>
+        </div>
+
         <form wire:submit="checkout">
             {{$this->form}}
             <x-filament::button type="submit" class="w-full h-12 bg-primary mt-6 text-white py-2 rounded-lg">Checkout
@@ -81,9 +107,23 @@
         @endforeach
 
         @if(count($order_items) > 0)
-        <div class="py-4 ">
-            <h3 class="text-lg font-semibold text-center">Total: Rp {{number_format($this->calculateTotal(), 0, ',',
+        <div class="py-4 border-t border-gray-100 bg-gray-50 dark:bg-gray-700">
+            <h3 class="text-lg font-semibold text-center mb-2">Total: Rp {{number_format($this->calculateTotal(), 0, ',',
                 '.')}}</h3>
+            
+            @if($paid_amount > 0 && $payment_method_id)
+                @php
+                    $paymentMethod = \App\Models\PaymentMethod::find($payment_method_id);
+                @endphp
+                @if($paymentMethod && $paymentMethod->is_cash)
+                <div class="text-center">
+                    <p class="text-sm text-gray-600 dark:text-gray-400">Dibayar: Rp {{number_format($paid_amount, 0, ',', '.')}}</p>
+                    <p class="text-sm font-semibold {{ $change_amount >= 0 ? 'text-green-600' : 'text-red-600' }}">
+                        Kembalian: Rp {{number_format($change_amount, 0, ',', '.')}}
+                    </p>
+                </div>
+                @endif
+            @endif
         </div>
         @endif
     </div>
@@ -115,9 +155,18 @@
         @endforeach
 
         @if(count($order_items) > 0)
-        <div class="py-4 border-t border-gray-100 bg-gray-50 dark:bg-gray-700 ">
-            <h3 class="text-lg font-semibold text-center">Total: Rp {{number_format($this->calculateTotal(), 0, ',',
+        <div class="py-4 border-t border-gray-100 bg-gray-50 dark:bg-gray-700">
+            <h3 class="text-lg font-semibold text-center mb-2">Total: Rp {{number_format($this->calculateTotal(), 0, ',',
                 '.')}}</h3>
+            
+            @if($paid_amount > 0 && $payment_method_id)
+                <div class="text-center">
+                    <p class="text-sm text-gray-600 dark:text-gray-400">Dibayar: Rp {{number_format($paid_amount, 0, ',', '.')}}</p>
+                    <p class="text-sm font-semibold {{ $change_amount >= 0 ? 'text-green-600' : 'text-red-600' }}">
+                        Kembalian: Rp {{number_format($change_amount, 0, ',', '.')}}
+                    </p>
+                </div>
+            @endif
         </div>
         @endif
 
@@ -135,9 +184,33 @@
                 </div>
                 <!-- Modal Body -->
                 <div class="px-6 py-4">
-                    <p class="text-gray-800">
+                    <p class="text-gray-800 mb-4">
                         Apakah Anda ingin mencetak struk untuk pesanan ini?
                     </p>
+                    
+                    @if($paid_amount > 0 && $change_amount >= 0)
+                    @php
+                        $paymentMethod = \App\Models\PaymentMethod::find($payment_method_id);
+                    @endphp
+                    @if($paymentMethod && $paymentMethod->is_cash)
+                    <div class="bg-gray-100 p-3 rounded-lg mb-4">
+                        <div class="text-sm space-y-1">
+                            <div class="flex justify-between">
+                                <span>Total:</span>
+                                <span class="font-semibold">Rp {{number_format($this->calculateTotal(), 0, ',', '.')}}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Dibayar:</span>
+                                <span>Rp {{number_format($paid_amount, 0, ',', '.')}}</span>
+                            </div>
+                            <div class="flex justify-between border-t pt-1">
+                                <span>Kembalian:</span>
+                                <span class="font-semibold text-green-600">Rp {{number_format($change_amount, 0, ',', '.')}}</span>
+                            </div>
+                        </div>
+                    </div>
+                    @endif
+                    @endif
                 </div>
                 <!-- Modal Footer -->
                 <div class="px-6 py-4 flex justify-center space-x-4">

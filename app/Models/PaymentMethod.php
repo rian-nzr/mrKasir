@@ -192,6 +192,28 @@ class PaymentMethod extends Model
         ]);
     }
 
+    public static function getTotalBalance()
+    {
+        return static::where('is_active', true)->sum('balance');
+    }
+
+    public static function getFormattedTotalBalance()
+    {
+        return 'Rp ' . number_format((float) static::getTotalBalance(), 0, ',', '.');
+    }
+
+    public static function getBalanceByType()
+    {
+        return [
+            'cash' => static::where('is_active', true)->where('is_cash', true)->sum('balance'),
+            'ewallet' => static::where('is_active', true)->where('is_ewallet', true)->sum('balance'),
+            'transfer' => static::where('is_active', true)
+                ->where('is_cash', false)
+                ->where('is_ewallet', false)
+                ->sum('balance'),
+        ];
+    }
+
     protected static function booted(): void
     {
         parent::boot();
