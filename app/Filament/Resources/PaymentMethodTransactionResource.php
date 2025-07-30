@@ -14,6 +14,8 @@ use Illuminate\Database\Eloquent\Builder;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\Filter;
 use Illuminate\Database\Eloquent\Model;
+use Filament\Tables\Actions\Action;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class PaymentMethodTransactionResource extends Resource
 {
@@ -154,6 +156,49 @@ class PaymentMethodTransactionResource extends Resource
             ])
             ->actions([
                 // Tidak ada action edit/delete karena transaksi tidak boleh diubah
+            ])
+            ->headerActions([
+                Action::make('download_pdf')
+                    ->label('Download PDF')
+                    ->icon('heroicon-o-document-arrow-down')
+                    ->color('success')
+                    ->action(function () {
+                        // Get current query with filters
+                        $query = PaymentMethodTransaction::query();
+                        
+                        // Apply store filter
+                        $selectedStore = session('selected_store_id');
+                        if ($selectedStore) {
+                            $query->where(function ($q) use ($selectedStore) {
+                                $q->whereHas('fromPaymentMethod', function (Builder $subQuery) use ($selectedStore) {
+                                    $subQuery->where('store_id', $selectedStore);
+                                })->orWhereHas('toPaymentMethod', function (Builder $subQuery) use ($selectedStore) {
+                                    $subQuery->where('store_id', $selectedStore);
+                                });
+                            });
+                        }
+                        
+                        // Load relationships
+                        $transactions = $query->with(['fromPaymentMethod', 'toPaymentMethod', 'createdBy'])
+                            ->orderBy('created_at', 'desc')
+                            ->get();
+                        
+                        // Get store info for header
+                        $store = $selectedStore ? Store::find($selectedStore) : null;
+                        
+                        // Generate PDF
+                        $pdf = Pdf::loadView('pdf.payment-method-transactions', [
+                            'transactions' => $transactions,
+                            'store' => $store,
+                            'generated_at' => now(),
+                        ]);
+                        
+                        $filename = 'riwayat-transaksi-ewallet-' . now()->format('Y-m-d-H-i-s') . '.pdf';
+                        
+                        return response()->streamDownload(function () use ($pdf) {
+                            echo $pdf->output();
+                        }, $filename);
+                    }),
             ])
             ->bulkActions([
                 // Tidak ada bulk action karena transaksi tidak boleh dihapus
