@@ -7,6 +7,7 @@ use Filament\Tables;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\Setting;
+use App\Models\PaymentMethod;
 use Filament\Forms\Form;
 use Filament\Tables\Table;
 use Mike42\Escpos\Printer;
@@ -99,11 +100,26 @@ class OrderResource extends Resource implements HasShieldPermissions
                             ->numeric(),
 
                         Forms\Components\Select::make('payment_method_id')
-                            ->relationship('paymentMethod', 'name')
+                            ->label('Metode Pembayaran')
+                            ->options(function () {
+                                $user = auth()->user();
+                                $storeId = null;
+                                
+                                if ($user->isSuperAdmin()) {
+                                    $storeId = session('selected_store_id');
+                                } else {
+                                    $storeId = $user->store_id;
+                                }
+                                
+                                if ($storeId) {
+                                    return PaymentMethod::where('store_id', $storeId)->pluck('name', 'id');
+                                }
+                                
+                                return PaymentMethod::pluck('name', 'id');
+                            })
                             ->reactive()
                             ->columnSpan(1)
-                            ->required()
-                            ,
+                            ->required(),
                         Forms\Components\Hidden::make('is_cash')
                             ->dehydrated(),
                             Forms\Components\Textarea::make('note')

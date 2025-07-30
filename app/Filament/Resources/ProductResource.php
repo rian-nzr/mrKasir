@@ -58,23 +58,62 @@ class ProductResource extends Resource implements HasShieldPermissions
                 Forms\Components\Select::make('category_id')
                     ->label('Kategori Produk')
                     ->relationship('category', 'name'),
+                Forms\Components\Select::make('group_id')
+                    ->label('Grup Produk')
+                    ->relationship('group', 'name')
+                    ->searchable()
+                    ->preload(),
                 Forms\Components\TextInput::make('stock')
                     ->label('Stok Produk')
                     ->required()
                     ->numeric()
                     ->default(1),
+                Forms\Components\TextInput::make('cost_price')
+                    ->label('Harga Beli/Modal')
+                    ->prefix('Rp')
+                    ->placeholder('0')
+                    ->helperText('Harga pembelian atau modal produk (contoh: 50000 atau 50.000)')
+                    ->formatStateUsing(fn ($state) => $state ? number_format($state, 0, ',', '.') : '')
+                    ->dehydrateStateUsing(fn ($state) => $state ? (int) str_replace(['.', ',', ' '], '', $state) : null)
+                    ->extraInputAttributes([
+                        'x-data' => '{ 
+                            formatCurrency() { 
+                                let value = $el.value.replace(/[^\d]/g, "");
+                                if (value) {
+                                    $el.value = parseInt(value).toLocaleString("id-ID");
+                                }
+                            }
+                        }',
+                        'x-on:input' => 'formatCurrency()',
+                        'x-on:blur' => 'formatCurrency()',
+                    ]),
                 Forms\Components\TextInput::make('price')
-                    ->label('Harga Produk')
+                    ->label('Harga Jual')
                     ->required()
-                    ->numeric()
-                    ->prefix('Rp.'),
+                    ->prefix('Rp')
+                    ->placeholder('0')
+                    ->helperText('Harga jual produk (contoh: 75000 atau 75.000)')
+                    ->formatStateUsing(fn ($state) => $state ? number_format($state, 0, ',', '.') : '')
+                    ->dehydrateStateUsing(fn ($state) => $state ? (int) str_replace(['.', ',', ' '], '', $state) : null)
+                    ->extraInputAttributes([
+                        'x-data' => '{ 
+                            formatCurrency() { 
+                                let value = $el.value.replace(/[^\d]/g, "");
+                                if (value) {
+                                    $el.value = parseInt(value).toLocaleString("id-ID");
+                                }
+                            }
+                        }',
+                        'x-on:input' => 'formatCurrency()',
+                        'x-on:blur' => 'formatCurrency()',
+                    ]),
                 Forms\Components\Toggle::make('is_active')
                     ->label('Produk Aktif')
                     ->required(),
                 Forms\Components\FileUpload::make('image')
                     ->label('Gambar Produk')
                     ->image()
-                    ->maxSize(1024), // tambahi ini kalau teman2 ingin menambahkan maximum ukuran gambarnya dengan hitungan kilobyte(kb
+                    ->maxSize(1024),
                 Forms\Components\TextInput::make('barcode')
                     ->label('Barcode Produk')
                     ->maxLength(255),
@@ -95,22 +134,46 @@ class ProductResource extends Resource implements HasShieldPermissions
                     ->label('Gambar')
                     ->circular(),
                 Tables\Columns\TextColumn::make('category.name')
-                    ->label('Kategori Produk')
+                    ->label('Kategori')
                     ->numeric()
                     ->sortable(),
+                Tables\Columns\TextColumn::make('group.name')
+                    ->label('Grup Produk')
+                    ->sortable()
+                    ->toggleable(),
                 Tables\Columns\TextColumn::make('stock')
                     ->label('Stok')
                     ->numeric()
                     ->sortable(),
+                Tables\Columns\TextColumn::make('cost_price')
+                    ->label('Harga Beli')
+                    ->money('IDR')
+                    ->sortable()
+                    ->toggleable(),
                 Tables\Columns\TextColumn::make('price')
-                    ->label('Harga')
+                    ->label('Harga Jual')
+                    ->money('IDR')
                     ->sortable(),
+                Tables\Columns\TextColumn::make('profit')
+                    ->label('Laba')
+                    ->getStateUsing(fn ($record) => $record->profit)
+                    ->money('IDR')
+                    ->color(fn ($state) => $state > 0 ? 'success' : ($state < 0 ? 'danger' : 'gray'))
+                    ->sortable(false)
+                    ->toggleable(),
+                Tables\Columns\TextColumn::make('profit_percentage')
+                    ->label('% Laba')
+                    ->getStateUsing(fn ($record) => $record->profit_percentage . '%')
+                    ->color(fn ($record) => $record->profit_percentage > 0 ? 'success' : ($record->profit_percentage < 0 ? 'danger' : 'gray'))
+                    ->sortable(false)
+                    ->toggleable(),
                 Tables\Columns\IconColumn::make('is_active')
-                    ->label('Produk Aktif')
+                    ->label('Aktif')
                     ->boolean(),
                 Tables\Columns\TextColumn::make('barcode')
-                    ->label('Barcode Produk')
-                    ->searchable(),
+                    ->label('Barcode')
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
@@ -121,7 +184,22 @@ class ProductResource extends Resource implements HasShieldPermissions
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                // 
+                Tables\Filters\SelectFilter::make('category_id')
+                    ->label('Kategori')
+                    ->relationship('category', 'name')
+                    ->searchable()
+                    ->preload(),
+                Tables\Filters\SelectFilter::make('group_id')
+                    ->label('Grup Produk')
+                    ->relationship('group', 'name')
+                    ->searchable()
+                    ->preload(),
+                Tables\Filters\TernaryFilter::make('is_active')
+                    ->label('Status')
+                    ->boolean()
+                    ->trueLabel('Aktif')
+                    ->falseLabel('Tidak Aktif')
+                    ->native(false),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),

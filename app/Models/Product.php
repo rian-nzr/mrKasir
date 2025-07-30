@@ -17,9 +17,11 @@ class Product extends Model
         'name',
         'slug',
         'category_id',
+        'group_id',
         'store_id',
         'stock',
         'price',
+        'cost_price',
         'is_active',
         'image',
         'barcode',
@@ -32,6 +34,11 @@ class Product extends Model
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);
+    }
+
+    public function group(): BelongsTo
+    {
+        return $this->belongsTo(ProductGroup::class, 'group_id');
     }
 
     public function store(): BelongsTo
@@ -56,6 +63,22 @@ class Product extends Model
     public function getImageUrlAttribute()
     {
         return $this->image ? url('storage/'. $this->image) : null;
+    }
+
+    public function getProfitAttribute()
+    {
+        if ($this->cost_price && $this->price) {
+            return $this->price - $this->cost_price;
+        }
+        return 0;
+    }
+
+    public function getProfitPercentageAttribute()
+    {
+        if ($this->cost_price && $this->price && $this->cost_price > 0) {
+            return round((($this->price - $this->cost_price) / $this->cost_price) * 100, 2);
+        }
+        return 0;
     }
 
     public function scopeSearch($query, $value)

@@ -5,11 +5,14 @@ namespace App\Filament\Resources;
 use Filament\Forms;
 use Filament\Tables;
 use App\Models\Report;
+use App\Models\Store;
 use Filament\Forms\Form;
 use Filament\Tables\Table;
 use Filament\Resources\Resource;
 use App\Filament\Resources\ReportResource\Pages;
 use BezhanSalleh\FilamentShield\Contracts\HasShieldPermissions;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Session;
 
 class ReportResource extends Resource implements HasShieldPermissions
 {
@@ -42,6 +45,18 @@ class ReportResource extends Resource implements HasShieldPermissions
             ->schema([
                 Forms\Components\Section::make('Setting Laporan')
                 ->schema([
+                    Forms\Components\Select::make('store_id')
+                        ->label('Toko')
+                        ->options(Store::where('is_active', true)->pluck('name', 'id'))
+                        ->default(function () {
+                            $user = Auth::user();
+                            if ($user->isSuperAdmin()) {
+                                return Session::get('selected_store_id');
+                            }
+                            return $user->store_id;
+                        })
+                        ->required()
+                        ->disabled(!Auth::user()->isSuperAdmin()),
                     Forms\Components\ToggleButtons::make('report_type')
                     ->options([
                         'pemasukan' => 'Pemasukan',
@@ -69,6 +84,10 @@ class ReportResource extends Resource implements HasShieldPermissions
     {
         return $table
             ->columns([
+                Tables\Columns\TextColumn::make('store.name')
+                    ->label('Toko')
+                    ->sortable()
+                    ->searchable(),
                 Tables\Columns\TextColumn::make('name')
                     ->searchable(),
                 Tables\Columns\IconColumn::make('report_type')

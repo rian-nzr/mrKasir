@@ -24,10 +24,11 @@ class ReportObserver
             $path = 'reports/' . $fileName;
 
             if ($report->report_type == 'pemasukan') {
-                // Ambil data Order sesuai start_date dan end_date
+                // Ambil data Order sesuai start_date, end_date, dan store_id
                 $data = Order::query()
                     ->when($report->start_date, fn ($q) => $q->whereDate('updated_at', '>=', $report->start_date))
                     ->when($report->end_date, fn ($q) => $q->whereDate('updated_at', '<=', $report->end_date))
+                    ->when($report->store_id, fn ($q) => $q->where('store_id', $report->store_id))
                     ->get();
 
                 // Generate PDF
@@ -38,10 +39,11 @@ class ReportObserver
                 ])->setPaper('a4', 'portrait');
 
             } else {
-                 // Ambil data Order sesuai start_date dan end_date
+                 // Ambil data Expense sesuai start_date, end_date, dan store_id
                  $data = Expense::query()
                  ->when($report->start_date, fn ($q) => $q->whereDate('updated_at', '>=', $report->start_date))
                  ->when($report->end_date, fn ($q) => $q->whereDate('updated_at', '<=', $report->end_date))
+                 ->when($report->store_id, fn ($q) => $q->where('store_id', $report->store_id))
                  ->get();
 
                  // Generate PDF
@@ -77,10 +79,11 @@ class ReportObserver
             $path = 'reports/' . $report->name;
 
             if ($report->report_type == 'pemasukan') {
-                // Ambil data Order sesuai start_date dan end_date
+                // Ambil data Order sesuai start_date, end_date, dan store_id
                 $data = Order::query()
                     ->when($report->start_date, fn ($q) => $q->whereDate('updated_at', '>=', $report->start_date))
                     ->when($report->end_date, fn ($q) => $q->whereDate('updated_at', '<=', $report->end_date))
+                    ->when($report->store_id, fn ($q) => $q->where('store_id', $report->store_id))
                     ->get();
 
                 // Generate PDF
@@ -91,10 +94,11 @@ class ReportObserver
                 ])->setPaper('a4', 'portrait');
 
             } else {
-                 // Ambil data Order sesuai start_date dan end_date
+                 // Ambil data Expense sesuai start_date, end_date, dan store_id
                  $data = Expense::query()
                  ->when($report->start_date, fn ($q) => $q->whereDate('updated_at', '>=', $report->start_date))
                  ->when($report->end_date, fn ($q) => $q->whereDate('updated_at', '<=', $report->end_date))
+                 ->when($report->store_id, fn ($q) => $q->where('store_id', $report->store_id))
                  ->get();
 
                  // Generate PDF

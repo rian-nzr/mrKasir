@@ -6,6 +6,8 @@ use Carbon\Carbon;
 use Filament\Forms;
 use Filament\Tables;
 use App\Models\Expense;
+use App\Models\Store;
+use App\Models\PaymentMethod;
 use Filament\Forms\Form;
 use Filament\Tables\Table;
 use Filament\Resources\Resource;
@@ -13,6 +15,8 @@ use Filament\Tables\Filters\Filter;
 use Illuminate\Database\Eloquent\Builder;
 use App\Filament\Resources\ExpenseResource\Pages;
 use BezhanSalleh\FilamentShield\Contracts\HasShieldPermissions;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Session;
 
 class ExpenseResource extends Resource implements HasShieldPermissions
 {
@@ -51,6 +55,18 @@ class ExpenseResource extends Resource implements HasShieldPermissions
     {
         return $form
             ->schema([
+                Forms\Components\Select::make('store_id')
+                    ->label('Toko')
+                    ->options(Store::where('is_active', true)->pluck('name', 'id'))
+                    ->default(function () {
+                        $user = Auth::user();
+                        if ($user->isSuperAdmin()) {
+                            return Session::get('selected_store_id');
+                        }
+                        return $user->store_id;
+                    })
+                    ->required()
+                    ->disabled(!Auth::user()->isSuperAdmin()),
                 Forms\Components\TextInput::make('name')
                     ->label('Nama Pengeluaran')
                     ->required()
@@ -66,6 +82,17 @@ class ExpenseResource extends Resource implements HasShieldPermissions
                     ->label('Jumlah Pengeluaran')
                     ->required()
                     ->numeric(),
+                Forms\Components\Select::make('payment_method_id')
+                    ->label('Metode Pembayaran')
+                    ->options(function (callable $get) {
+                        $storeId = $get('store_id');
+                        if ($storeId) {
+                            return PaymentMethod::where('store_id', $storeId)->pluck('name', 'id');
+                        }
+                        return [];
+                    })
+                    ->reactive()
+                    ->nullable(),
             ]);
     }
 
@@ -77,12 +104,21 @@ class ExpenseResource extends Resource implements HasShieldPermissions
                     ->label('Tanggal Pengeluaran')
                     ->date()
                     ->sortable(),
+                Tables\Columns\TextColumn::make('store.name')
+                    ->label('Toko')
+                    ->sortable()
+                    ->searchable(),
                 Tables\Columns\TextColumn::make('name')
                     ->label('Nama Pengeluaran')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('amount')
                     ->label('Jumlah Pengeluaran')
-                    ->numeric(),
+                    ->money('IDR')
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('paymentMethod.name')
+                    ->label('Metode Pembayaran')
+                    ->sortable()
+                    ->placeholder('-'),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()

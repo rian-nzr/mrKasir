@@ -38,7 +38,8 @@ class AppServiceProvider extends ServiceProvider
         OrderProduct::observe(OrderProductObserver::class);
 
         FilamentAsset::register([
-            Js::make('printer-thermal', asset('js/printer-thermal.js'))
+            Js::make('printer-thermal', asset('js/printer-thermal.js')),
+            Js::make('currency-formatter', asset('js/currency-formatter.js'))
         ]);
     }
 }
