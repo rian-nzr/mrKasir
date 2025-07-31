@@ -7,6 +7,8 @@ use Flowframe\Trend\Trend;
 use Flowframe\Trend\TrendValue;
 use App\Models\Order;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Session;
 
 class OmsetChart extends ChartWidget
 {
@@ -43,7 +45,22 @@ class OmsetChart extends ChartWidget
         };
 
 
-        $query = Trend::model(Order::class)
+        // Build base query with store filtering
+        $user = Auth::user();
+        $currentStoreId = null;
+        
+        if ($user->isSuperAdmin()) {
+            $currentStoreId = Session::get('selected_store_id');
+        } else {
+            $currentStoreId = $user->store_id;
+        }
+
+        $baseQuery = Order::query();
+        if ($currentStoreId) {
+            $baseQuery->where('store_id', $currentStoreId);
+        }
+
+        $query = Trend::query($baseQuery)
             ->between(
                 start: $dateRange['start'],
                 end: $dateRange['end'],

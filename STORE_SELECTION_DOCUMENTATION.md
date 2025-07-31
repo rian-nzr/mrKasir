@@ -24,7 +24,11 @@ Sistem telah diperbarui untuk memaksa Super Admin memilih toko terlebih dahulu s
 
 ### 3. Dashboard Widgets yang Store-Aware
 - **TotalBalanceOverview**: Menampilkan total saldo sesuai toko yang dipilih
+- **StatsOverview**: Menampilkan statistik pemasukan, pengeluaran, dan laba berdasarkan toko dan data hari ini (default)
+- **OmsetChart**: Chart pemasukan dengan filter toko dan periode waktu
+- **ExpenseChart**: Chart pengeluaran dengan filter toko dan periode waktu
 - **Auto-fallback**: Jika belum pilih toko, menampilkan pesan "Pilih Toko Terlebih Dahulu"
+- **Default Data**: Semua widget menampilkan data hari ini jika tidak ada filter tanggal yang dipilih
 
 ## Alur Kerja Sistem
 
@@ -39,6 +43,7 @@ Sistem telah diperbarui untuk memaksa Super Admin memilih toko terlebih dahulu s
 1. **Login** → Berhasil masuk sistem
 2. **Langsung ke dashboard** → Menggunakan toko yang sebelumnya dipilih
 3. **Data konsisten** → Semua widgets dan data sesuai toko yang dipilih
+4. **Default view** → Menampilkan data hari ini untuk stats dan charts
 
 ### Mengganti Toko (Store Switching):
 1. **Klik user menu** → Di pojok kanan atas
@@ -93,8 +98,10 @@ Sistem telah diperbarui untuk memaksa Super Admin memilih toko terlebih dahulu s
 ### Dashboard Widgets:
 - **Conditional Display**: Widget menampilkan pesan jika belum pilih toko
 - **Store-Specific Data**: Data yang ditampilkan sesuai toko yang dipilih
+- **Default Today View**: Semua stats dan charts menampilkan data hari ini secara default
+- **Date Filtering**: Pengguna dapat memilih rentang tanggal custom melalui filter
 - **Visual Indicators**: Icon dan warna yang konsisten
-- **Performance**: Query yang efficient dengan filtering store_id
+- **Performance**: Query yang efficient dengan filtering store_id dan date range
 
 ### User Menu:
 - **Store Status**: Info toko aktif dengan color coding
@@ -120,13 +127,14 @@ Sistem telah diperbarui untuk memaksa Super Admin memilih toko terlebih dahulu s
 2. Verify redirect ke `/admin/store-selection`
 3. Verify form store selection muncul
 4. Pilih toko dan verify redirect ke dashboard
-5. Verify data dashboard sesuai toko yang dipilih
+5. Verify data dashboard sesuai toko yang dipilih dan menampilkan data hari ini
 
 ### Test Case 2: Super Admin Returning Login
 1. Login sebagai Super Admin yang sudah pernah pilih toko
 2. Verify langsung masuk dashboard
 3. Verify data sesuai toko yang sebelumnya dipilih
 4. Verify user menu menampilkan info toko aktif
+5. Verify dashboard menampilkan data hari ini secara default
 
 ### Test Case 3: Store Switching
 1. Di dashboard, klik user menu
@@ -134,12 +142,20 @@ Sistem telah diperbarui untuk memaksa Super Admin memilih toko terlebih dahulu s
 3. Verify redirect ke store selection
 4. Pilih toko berbeda
 5. Verify data dashboard berubah sesuai toko baru
+6. Verify tetap menampilkan data hari ini untuk toko yang baru
 
 ### Test Case 4: Non-Super Admin
 1. Login sebagai user biasa (bukan Super Admin)
 2. Verify langsung masuk dashboard
 3. Verify tidak ada menu "Ganti Toko"
 4. Verify data sesuai store_id user
+5. Verify menampilkan data hari ini secara default
+
+### Test Case 5: Date Filtering
+1. Di dashboard, buka filter tanggal
+2. Pilih rentang tanggal custom
+3. Verify semua stats dan charts update sesuai rentang yang dipilih
+4. Clear filter dan verify kembali ke data hari ini
 
 ## Error Handling
 
@@ -166,6 +182,10 @@ Sistem telah diperbarui untuk memaksa Super Admin memilih toko terlebih dahulu s
 6. **Store Analytics**: Statistik usage per store
 7. **Quick Store Info**: Tooltip dengan info detail toko
 8. **Store Health Check**: Status kesehatan data per toko
+9. **Custom Default Periods**: Pengaturan default date range per user/store
+10. **Dashboard Presets**: Saved filter combinations dengan store context
+11. **Comparative Analysis**: Perbandingan performa antar toko
+12. **Real-time Dashboard**: Auto-refresh data untuk monitoring real-time
 
 ## Migration Guide
 

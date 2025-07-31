@@ -29,13 +29,16 @@ class Dashboard extends BaseDashboard
                     ->schema([
                         DatePicker::make('startDate')
                             ->label('Dari Tanggal')
+                            ->placeholder('Default: Hari ini')
                             ->maxDate(fn (Get $get) => $get('endDate') ?: now()),
                         DatePicker::make('endDate')
                             ->label('Sampai Tanggal')
+                            ->placeholder('Default: Hari ini')
                             ->minDate(fn (Get $get) => $get('startDate') ?: now())
                             ->maxDate(now()),
                     ])
-                    ->columns(2),
+                    ->columns(2)
+                    ->description('Jika tidak ada tanggal yang dipilih, dashboard akan menampilkan data hari ini secara otomatis.'),
             ]);
     }
 

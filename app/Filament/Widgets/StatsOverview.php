@@ -24,13 +24,14 @@ class StatsOverview extends BaseWidget
 
     protected function getStats(): array
     {
+        // Set default date range to today if no filters are applied
         $startDate = ! is_null($this->filters['startDate'] ?? null) ?
         Carbon::parse($this->filters['startDate']) :
-        null;
+        now()->startOfDay();
 
         $endDate = ! is_null($this->filters['endDate'] ?? null) ?
         Carbon::parse($this->filters['endDate'])->addDay() :
-        now();
+        now()->endOfDay();
 
         // Get current store
         $user = Auth::user();
