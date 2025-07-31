@@ -8,7 +8,7 @@ use App\Models\Product;
 use App\Models\Setting;
 use Livewire\Component;
 use App\Models\Category;
-
+use App\Models\Transaction;
 
 use Filament\Forms\Form;
 use App\Models\OrderProduct;
@@ -21,6 +21,7 @@ use Filament\Forms\Contracts\HasForms;
 use Filament\Notifications\Notification;
 use Filament\Forms\Concerns\InteractsWithForms;
 use App\Services\DirectPrintService;
+use App\Services\TransactionService;
 
 class Pos extends Component implements HasForms
 {
@@ -38,10 +39,15 @@ class Pos extends Component implements HasForms
     public $payment_methods;
     public $order_items = [];
     public $total_price;
-    public $paid_amount = 0;
+    public $paid_amount = null; // Changed from 0 to null for better zero handling
     public $change_amount = 0;
     public $showConfirmationModal = false;
     public $orderToPrint = null;
+
+    // Transaction properties
+    public $showTransactionModal = false;
+    public $transactionType = '';
+    public $transactionData = [];
 
     protected $listeners = [
         'scanResult' => 'handleScanResult',
@@ -108,8 +114,11 @@ class Pos extends Component implements HasForms
                         // Input Jumlah Dibayar
                         Forms\Components\TextInput::make('paid_amount')
                             ->label('Jumlah Dibayar')
-                            ->numeric()
                             ->prefix('Rp')
+                            ->placeholder('')
+                            ->extraInputAttributes([
+                                'class' => 'text-right font-medium'
+                            ])
                             ->live()
                             ->afterStateUpdated(function () {
                                 $this->calculateChange();
@@ -120,6 +129,10 @@ class Pos extends Component implements HasForms
                         Forms\Components\TextInput::make('change_amount')
                             ->label('Kembalian')
                             ->prefix('Rp')
+                            ->placeholder('')
+                            ->extraInputAttributes([
+                                'class' => 'text-right font-medium'
+                            ])
                             ->readOnly()
                             ->columnSpan(1),
                     ])
@@ -144,6 +157,17 @@ class Pos extends Component implements HasForms
             
             // Reset barcode
             $this->barcode = '';
+    }
+
+    public function updatedPaidAmount($value)
+    {
+        // Convert to numeric value without removing dots (since we don't use formatting anymore)
+        if (is_string($value)) {
+            $this->paid_amount = (float) $value;
+        }
+        
+        // Trigger change calculation
+        $this->calculateChange();
     }
 
     public function handleScanResult($decodedText)
@@ -295,6 +319,16 @@ class Pos extends Component implements HasForms
 
     public function calculateChange()
     {
+        // Convert paid_amount to float if it's a string
+        if (is_string($this->paid_amount)) {
+            $this->paid_amount = (float) $this->paid_amount;
+        }
+        
+        // Ensure paid_amount is not null
+        if ($this->paid_amount === null) {
+            $this->paid_amount = 0;
+        }
+        
         $total = $this->calculateTotal();
         $this->change_amount = max(0, $this->paid_amount - $total);
     }
@@ -334,7 +368,7 @@ class Pos extends Component implements HasForms
         $this->order_items = [];
         $this->payment_method_id = null;
         $this->total_price = 0;
-        $this->paid_amount = 0;
+        $this->paid_amount = null; // Reset to null instead of 0
         $this->change_amount = 0;
     }
 
@@ -342,6 +376,11 @@ class Pos extends Component implements HasForms
 
     public function checkout()
     {
+        // Convert paid_amount to numeric if it's a string
+        if (is_string($this->paid_amount)) {
+            $this->paid_amount = (float) $this->paid_amount;
+        }
+        
         // Hitung total terlebih dahulu
         $total = $this->calculateTotal();
         
@@ -476,6 +515,154 @@ class Pos extends Component implements HasForms
             date: $order->created_at->format('d-m-Y H:i:s')
         );
 
+    }
+
+    // Transaction Methods
+    public function openTransactionModal($type)
+    {
+        $this->transactionType = $type;
+        $this->transactionData = $this->getDefaultTransactionData($type);
+        $this->showTransactionModal = true;
+    }
+
+    public function closeTransactionModal()
+    {
+        $this->showTransactionModal = false;
+        $this->transactionType = '';
+        $this->transactionData = [];
+    }
+
+    private function getDefaultTransactionData($type)
+    {
+        $base = [
+            'type' => $type,
+            'keterangan' => '',
+        ];
+
+        switch ($type) {
+            case 'transfer':
+                return array_merge($base, [
+                    'sumber_dana_id' => null,
+                    'amount' => 0,
+                    'admin_luar' => 0,
+                    'admin_dalam' => 0,
+                ]);
+
+            case 'tarik_tunai':
+                return array_merge($base, [
+                    'sumber_dana_id' => null,
+                    'amount' => 0,
+                    'tujuan_dana_id' => null, // Changed from 'tujuan' to 'tujuan_dana_id'
+                    'admin_luar' => 0,
+                    'admin_dalam' => 0,
+                ]);
+
+            case 'jasa_transfer':
+                return array_merge($base, [
+                    'amount' => 0,
+                    'terima_dana' => 0,
+                    'admin' => 0,
+                ]);
+
+            case 'mode_pulsa':
+                return array_merge($base, [
+                    'sumber_dana_id' => null,
+                    'jenis_transaksi' => '',
+                    'sumber' => '',
+                    'modal' => 0,
+                    'harga_jual' => 0,
+                    'admin' => 0,
+                ]);
+
+            default:
+                return $base;
+        }
+    }
+
+    public function saveTransaction()
+    {
+        try {
+            // Convert formatted rupiah values to numeric before processing
+            $this->normalizeTransactionData();
+            
+            $transactionService = app(TransactionService::class);
+            $rules = $transactionService->validateTransactionData($this->transactionData);
+            
+            $this->validate(['transactionData' => 'array'] + collect($rules)->mapWithKeys(function($rule, $key) {
+                return ["transactionData.$key" => $rule];
+            })->toArray());
+
+            $transaction = $transactionService->processTransaction($this->transactionData);
+
+            Notification::make()
+                ->title('Transaksi berhasil disimpan')
+                ->success()
+                ->send();
+
+            $this->closeTransactionModal();
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            Notification::make()
+                ->title('Validasi Error')
+                ->body(collect($e->errors())->flatten()->implode(', '))
+                ->danger()
+                ->send();
+        } catch (\Exception $e) {
+            Notification::make()
+                ->title('Error')
+                ->body($e->getMessage())
+                ->danger()
+                ->send();
+        }
+    }
+
+    /**
+     * Convert formatted rupiah strings to numeric values
+     */
+    private function normalizeTransactionData()
+    {
+        $numericFields = [
+            'amount', 'admin_luar', 'admin_dalam', 'admin', 
+            'terima_dana', 'modal', 'harga_jual'
+        ];
+
+        foreach ($numericFields as $field) {
+            if (isset($this->transactionData[$field]) && is_string($this->transactionData[$field])) {
+                // Remove dots and convert to numeric
+                $value = str_replace('.', '', $this->transactionData[$field]);
+                $this->transactionData[$field] = is_numeric($value) && $value > 0 ? (float) $value : null;
+            }
+        }
+    }
+
+    /**
+     * Format currency for display
+     */
+    public function formatCurrency($value)
+    {
+        if (!$value || $value <= 0) {
+            return '';
+        }
+        return number_format($value, 0, ',', '.');
+    }
+
+    /**
+     * Get formatted paid amount for display
+     */
+    public function getFormattedPaidAmountProperty()
+    {
+        return $this->formatCurrency($this->paid_amount);
+    }
+
+    public function getTransactionTypeTitle()
+    {
+        return match($this->transactionType) {
+            'transfer' => 'Transfer',
+            'tarik_tunai' => 'Tarik Tunai',
+            'jasa_transfer' => 'Jasa Transfer',
+            'mode_pulsa' => 'Mode Pulsa',
+            default => 'Transaksi'
+        };
     }
 
 }
