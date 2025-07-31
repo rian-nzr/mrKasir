@@ -51,6 +51,7 @@ class AdminPanelProvider extends PanelProvider
             ->authMiddleware([
                 Authenticate::class,
                 \App\Http\Middleware\StoreMiddleware::class,
+                'ensure.store.selected',
             ])
             ->userMenuItems([
                 'store_info' => MenuItem::make()
@@ -75,10 +76,10 @@ class AdminPanelProvider extends PanelProvider
                         return $user?->store ? 'success' : 'danger';
                     })
                     ->sort(-1),
-                'change_store' => MenuItem::make()
+                                'change_store' => MenuItem::make()
                     ->label('Ganti Toko')
                     ->icon('heroicon-o-arrow-path')
-                    ->url(fn() => route('store.select'))
+                    ->url('/store/change')
                     ->visible(fn() => auth()->user()?->isSuperAdmin())
                     ->color('primary')
                     ->sort(-0.5),
