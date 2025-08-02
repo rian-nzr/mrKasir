@@ -3,10 +3,12 @@
 namespace App\Providers;
 
 use App\Models\Report;
+use App\Models\Order;
 use App\Models\OrderProduct;
 use Dedoc\Scramble\Scramble;
 use Filament\Support\Assets\Js;
 use App\Observers\ReportObserver;
+use App\Observers\OrderObserver;
 use App\Observers\OrderProductObserver;
 use Illuminate\Support\ServiceProvider;
 use Filament\Support\Facades\FilamentAsset;
@@ -35,6 +37,7 @@ class AppServiceProvider extends ServiceProvider
         });
 
         Report::observe(ReportObserver::class);
+        Order::observe(OrderObserver::class);
         OrderProduct::observe(OrderProductObserver::class);
 
         FilamentAsset::register([

@@ -29,6 +29,7 @@ class Transaction extends Model
         'harga_jual',
         'status',
         'financial_impact',
+        'cashier_shift_id',
     ];
 
     protected $casts = [
@@ -61,6 +62,11 @@ class Transaction extends Model
     public function sumberDana(): BelongsTo
     {
         return $this->belongsTo(PaymentMethod::class, 'sumber_dana_id');
+    }
+
+    public function cashierShift(): BelongsTo
+    {
+        return $this->belongsTo(CashierShift::class);
     }
 
     // Helper methods

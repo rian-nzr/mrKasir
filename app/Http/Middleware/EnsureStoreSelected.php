@@ -40,7 +40,13 @@ class EnsureStoreSelected
         
         // Jika super admin belum memilih toko, redirect ke halaman store selection
         if (!Session::has('selected_store_id')) {
-            return redirect('/store/select');
+            // Temporary fix: Auto-select first store for testing
+            $firstStore = \App\Models\Store::first();
+            if ($firstStore) {
+                Session::put('selected_store_id', $firstStore->id);
+                return $next($request);
+            }
+            return redirect()->route('store.select');
         }
         
         return $next($request);

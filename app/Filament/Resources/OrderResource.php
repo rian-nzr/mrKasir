@@ -122,6 +122,8 @@ class OrderResource extends Resource implements HasShieldPermissions
                             ->required(),
                         Forms\Components\Hidden::make('is_cash')
                             ->dehydrated(),
+                        Forms\Components\Hidden::make('cashier_shift_id')
+                            ->dehydrated(),
                             Forms\Components\Textarea::make('note')
                             ->columnSpanFull()
                             ->columnSpan(2),
