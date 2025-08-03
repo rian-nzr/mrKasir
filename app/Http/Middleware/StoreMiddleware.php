@@ -29,16 +29,26 @@ class StoreMiddleware
 
         $user = Auth::user();
         
-        // Cek apakah user punya store_id tetap (seperti kasir)
+        // Super admin has full access without store restrictions
+        if ($user->hasRole('super_admin')) {
+            // Super admin can access all stores - no restrictions
+            // Optionally set selected store if provided in request
+            if ($request->has('store_id')) {
+                Session::put('selected_store_id', $request->input('store_id'));
+            }
+            // If no store selected, super admin sees all data
+            return $next($request);
+        }
+        
+        // Cek apakah user punya store_id tetap (seperti kasir/admin)
         if ($user->store_id) {
             // Set store dari user ke session
             Session::put('selected_store_id', $user->store_id);
         } else {
-            // Untuk super admin, periksa apakah sudah ada store yang dipilih
-            // Jika belum dan bukan di route store selection, mungkin perlu redirect
-            if ($user->hasRole('super_admin') && !Session::has('selected_store_id')) {
-                // Biarkan super admin tanpa store selection untuk flexibility
-                // Atau bisa redirect ke store selection jika diperlukan
+            // For non-super admin users without store_id, might need store selection
+            if (!Session::has('selected_store_id')) {
+                // Could redirect to store selection or show error
+                // For now, let it pass
             }
         }
 

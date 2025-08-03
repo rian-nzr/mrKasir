@@ -12,22 +12,28 @@ class StoreSeeder extends Seeder
      */
     public function run(): void
     {
-        Store::create([
-            'name' => 'Toko A',
-            'code' => 'TOKO-A',
-            'address' => 'Jl. Contoh No. 1, Jakarta',
-            'phone' => '021-1234567',
-            'email' => 'tokoa@example.com',
-            'is_active' => true,
-        ]);
+        Store::firstOrCreate(
+            ['code' => 'TOKO-A'],
+            [
+                'name' => 'Toko A',
+                'code' => 'TOKO-A',
+                'address' => 'Jl. Contoh No. 1, Jakarta',
+                'phone' => '021-1234567',
+                'email' => 'tokoa@example.com',
+                'is_active' => true,
+            ]
+        );
 
-        Store::create([
-            'name' => 'Toko B',
-            'code' => 'TOKO-B',
-            'address' => 'Jl. Contoh No. 2, Bandung',
-            'phone' => '022-7654321',
-            'email' => 'tokob@example.com',
-            'is_active' => true,
-        ]);
+        Store::firstOrCreate(
+            ['code' => 'TOKO-B'],
+            [
+                'name' => 'Toko B',
+                'code' => 'TOKO-B',
+                'address' => 'Jl. Contoh No. 2, Bandung',
+                'phone' => '022-7654321',
+                'email' => 'tokob@example.com',
+                'is_active' => true,
+            ]
+        );
     }
 }

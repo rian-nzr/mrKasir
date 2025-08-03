@@ -265,7 +265,7 @@
                         $cashDiff = $cash_management['cash_difference'] ?? 0;
                         $diffColor = $cashDiff >= 0 ? 'green' : 'red';
                     @endphp
-                    <strong style="color: {{ $diffColor }}">
+                    <strong style="color: '{{ $diffColor }}'">
                         Rp {{ number_format($cashDiff, 0, ',', '.') }}
                     </strong>
                 </div>

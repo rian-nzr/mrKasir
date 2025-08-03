@@ -75,7 +75,7 @@ class Transaction extends Model
         return match($this->type) {
             'transfer', 'tarik_tunai' => (float)($this->admin_luar ?? 0) + (float)($this->admin_dalam ?? 0),
             'jasa_transfer' => (float)($this->admin ?? 0),
-            'mode_pulsa' => (float)($this->harga_jual ?? 0) - (float)($this->modal ?? 0),
+            'mode_pulsa' => (float)($this->harga_jual ?? 0) - (float)($this->modal ?? 0) + (float)($this->admin ?? 0),
             default => 0
         };
     }

@@ -334,6 +334,33 @@ class ViewCashierShift extends ViewRecord
                     ])
                     ->collapsible(),
 
+                Infolists\Components\Section::make('Ringkasan Laba & Profit')
+                    ->schema([
+                        Infolists\Components\Grid::make(3)
+                            ->schema([
+                                Infolists\Components\TextEntry::make('calculated_total_profit')
+                                    ->label('Total Profit')
+                                    ->state(fn ($record) => $record->getTotalProfit())
+                                    ->formatStateUsing(fn ($state) => 'Rp ' . number_format($state ?: 0, 0, ',', '.'))
+                                    ->icon('heroicon-o-chart-bar')
+                                    ->color('success')
+                                    ->weight('bold'),
+                                Infolists\Components\TextEntry::make('calculated_transaction_profit')
+                                    ->label('Profit dari Biaya Admin')
+                                    ->state(fn ($record) => $record->getTotalTransactionProfit())
+                                    ->formatStateUsing(fn ($state) => 'Rp ' . number_format($state ?: 0, 0, ',', '.'))
+                                    ->icon('heroicon-o-banknotes')
+                                    ->color('info'),
+                                Infolists\Components\TextEntry::make('calculated_order_profit')
+                                    ->label('Profit dari Penjualan')
+                                    ->state(fn ($record) => $record->getTotalProfit() - $record->getTotalTransactionProfit())
+                                    ->formatStateUsing(fn ($state) => 'Rp ' . number_format($state ?: 0, 0, ',', '.'))
+                                    ->icon('heroicon-o-shopping-cart')
+                                    ->color('warning'),
+                            ]),
+                    ])
+                    ->collapsible(),
+
                 Infolists\Components\Section::make('Catatan')
                     ->schema([
                         Infolists\Components\TextEntry::make('notes')

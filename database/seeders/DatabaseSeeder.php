@@ -13,14 +13,16 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
-
-        User::factory()->create([
-            'name' => 'Admin',
-            'email' => 'admin@gmail.com',
+        $this->call([
+            RoleSeeder::class,
+            StoreSeeder::class,
+            UserSeeder::class,
+            PaymentMethodSeeder::class,
+            ProductGroupSeeder::class,
+            CategorySeeder::class,
+            ProductSeeder::class,
+            CashierShiftPermissionsSeeder::class,
+            FixSuperAdminPermissionsSeeder::class,
         ]);
-
-        // Tambahkan role super admin
-        \Spatie\Permission\Models\Role::create(['name' => 'super_admin']);
     }
 }

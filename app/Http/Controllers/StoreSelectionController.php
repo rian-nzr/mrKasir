@@ -39,7 +39,7 @@ class StoreSelectionController extends Controller
         // Simpan pilihan toko ke session
         Session::put('selected_store_id', $request->store_id);
         
-        return redirect()->route('filament.admin.pages.dashboard')
+        return redirect('/')
             ->with('success', 'Toko berhasil dipilih!');
     }
     

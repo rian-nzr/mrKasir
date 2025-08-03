@@ -57,4 +57,30 @@ class User extends Authenticatable
     {
         return $this->hasRole('super_admin');
     }
+
+    public function canAccessAllStores(): bool
+    {
+        return $this->isSuperAdmin();
+    }
+
+    public function hasStoreRestriction(): bool
+    {
+        return !$this->isSuperAdmin() && $this->store_id !== null;
+    }
+
+    public function getAccessibleStoreIds(): array
+    {
+        if ($this->isSuperAdmin()) {
+            // Super admin can access all stores
+            return Store::pluck('id')->toArray();
+        }
+        
+        if ($this->store_id) {
+            // User has specific store restriction
+            return [$this->store_id];
+        }
+        
+        // Default case
+        return [];
+    }
 }

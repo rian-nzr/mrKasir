@@ -29,6 +29,9 @@ class CashierShift extends Model
         'total_sales',
         'total_transactions',
         'total_discounts',
+        'total_profit',
+        'transaction_profit',
+        'order_profit',
         'cash_out_amount',
         'cash_out_notes',
         'payment_summary',
@@ -44,6 +47,9 @@ class CashierShift extends Model
         'cash_difference' => 'decimal:2',
         'total_sales' => 'decimal:2',
         'total_discounts' => 'decimal:2',
+        'total_profit' => 'decimal:2',
+        'transaction_profit' => 'decimal:2',
+        'order_profit' => 'decimal:2',
         'cash_out_amount' => 'decimal:2',
         'payment_summary' => 'array',
         'shift_summary' => 'array',
@@ -184,6 +190,34 @@ class CashierShift extends Model
         return 0.0;
     }
 
+    public function getTotalTransactionProfit(): float
+    {
+        return $this->transactions()->sum(\DB::raw('
+            CASE 
+                WHEN type IN ("transfer", "tarik_tunai") THEN COALESCE(admin_luar, 0) + COALESCE(admin_dalam, 0)
+                WHEN type = "jasa_transfer" THEN COALESCE(admin, 0)
+                WHEN type = "mode_pulsa" THEN COALESCE(harga_jual, 0) - COALESCE(modal, 0) + COALESCE(admin, 0)
+                ELSE 0
+            END
+        '));
+    }
+
+    public function getTotalProfit(): float
+    {
+        // Profit dari orders (selling price - cost price)
+        $orderProfit = $this->orders()
+            ->join('order_products', 'orders.id', '=', 'order_products.order_id')
+            ->join('products', 'order_products.product_id', '=', 'products.id')
+            ->withoutGlobalScopes() // Remove global scopes to avoid ambiguous column issues
+            ->where('orders.cashier_shift_id', $this->id) // Explicit filter by shift ID
+            ->sum(\DB::raw('order_products.quantity * (order_products.unit_price - COALESCE(products.cost_price, 0))'));
+
+        // Profit dari transactions (biaya admin, dll)
+        $transactionProfit = $this->getTotalTransactionProfit();
+
+        return $orderProfit + $transactionProfit;
+    }
+
     public function getPaymentSummary(): array
     {
         $summary = [];
@@ -227,6 +261,9 @@ class CashierShift extends Model
         $totalSales = $this->getTotalSales();
         $totalTransactions = $this->getTotalTransactions();
         $totalDiscounts = $this->getTotalDiscounts();
+        $totalProfit = $this->getTotalProfit();
+        $transactionProfit = $this->getTotalTransactionProfit();
+        $orderProfit = $totalProfit - $transactionProfit;
         $paymentSummary = $this->getPaymentSummary();
         $cashOutTotal = $this->cashOuts()->sum('amount');
 
@@ -234,6 +271,9 @@ class CashierShift extends Model
             'total_sales' => $totalSales,
             'total_transactions' => $totalTransactions,
             'total_discounts' => $totalDiscounts,
+            'total_profit' => $totalProfit,
+            'transaction_profit' => $transactionProfit,
+            'order_profit' => $orderProfit,
             'cash_out_amount' => $cashOutTotal,
             'payment_summary' => $paymentSummary,
             'shift_summary' => [
@@ -244,6 +284,9 @@ class CashierShift extends Model
                 'total_transactions' => $totalTransactions,
                 'average_transaction' => $totalTransactions > 0 ? $totalSales / $totalTransactions : 0,
                 'cash_out' => $cashOutTotal,
+                'total_profit' => $totalProfit,
+                'transaction_profit' => $transactionProfit,
+                'order_profit' => $orderProfit,
             ]
         ]);
     }

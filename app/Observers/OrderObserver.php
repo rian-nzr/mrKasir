@@ -90,11 +90,31 @@ class OrderObserver
             ->first();
             
         if ($activeShift) {
-            // Only update summary fields for performance
+            $totalProfit = $activeShift->getTotalProfit();
+            $transactionProfit = $activeShift->getTotalTransactionProfit();
+            $orderProfit = $totalProfit - $transactionProfit;
+            
+            // Update summary fields including profit data
             $activeShift->update([
                 'total_sales' => $activeShift->getTotalSales(),
                 'total_transactions' => $activeShift->getTotalTransactions(),
                 'total_discounts' => $activeShift->getTotalDiscounts(),
+                'total_profit' => $totalProfit,
+                'transaction_profit' => $transactionProfit,
+                'order_profit' => $orderProfit,
+                'shift_summary' => [
+                    'gross_sales' => $activeShift->getTotalSales(),
+                    'net_sales' => $activeShift->getTotalSales() - $activeShift->getTotalDiscounts(),
+                    'cash_sales' => $activeShift->getCashSalesTotal(),
+                    'non_cash_sales' => $activeShift->getNonCashSalesTotal(),
+                    'total_transactions' => $activeShift->getTotalTransactions(),
+                    'average_transaction' => $activeShift->getTotalTransactions() > 0 
+                        ? $activeShift->getTotalSales() / $activeShift->getTotalTransactions() : 0,
+                    'cash_out' => $activeShift->cashOuts()->sum('amount'),
+                    'total_profit' => $totalProfit,
+                    'transaction_profit' => $transactionProfit,
+                    'order_profit' => $orderProfit,
+                ]
             ]);
         }
     }
