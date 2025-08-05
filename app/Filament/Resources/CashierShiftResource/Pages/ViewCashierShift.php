@@ -37,50 +37,139 @@ class ViewCashierShift extends ViewRecord
                 ->color('warning')
                 ->visible(fn () => $this->record->isOpen())
                 ->form([
-                    Forms\Components\Placeholder::make('info')
-                        ->label('')
-                        ->content(function () {
-                            $expectedCash = $this->record->opening_cash + $this->record->getCashSalesTotal() - $this->record->cash_out_amount;
-                            return "Kas yang diharapkan: Rp " . number_format($expectedCash, 0, ',', '.');
-                        }),
-                    Forms\Components\TextInput::make('closing_cash')
-                        ->label('Jumlah Kas Akhir (Hasil Perhitungan)')
-                        ->helperText('Hitung dan masukkan jumlah uang tunai yang tersedia saat tutup kasir')
-                        ->numeric()
-                        ->prefix('Rp')
-                        ->required()
-                        ->step(1000),
-                    Forms\Components\Textarea::make('closing_notes')
-                        ->label('Catatan Penutupan')
-                        ->helperText('Catatan tambahan mengenai penutupan shift')
-                        ->rows(3),
+                    Forms\Components\Section::make('Informasi Saldo Saat Ini')
+                        ->description('Saldo keseluruhan di sistem saat ini')
+                        ->schema([
+                            Forms\Components\Placeholder::make('current_total_balance')
+                                ->label('')
+                                ->content(function () {
+                                    $storeId = $this->record->store_id;
+                                    $paymentMethods = \App\Models\PaymentMethod::where('store_id', $storeId)
+                                        ->orderBy('is_cash', 'desc')
+                                        ->get();
+                                    
+                                    $totalBalance = $paymentMethods->sum('balance');
+                                    
+                                    $html = '<div class="space-y-2">';
+                                    $html .= '<div class="text-lg font-semibold text-primary-600">';
+                                    $html .= 'Total Saldo Sistem: Rp ' . number_format($totalBalance, 0, ',', '.');
+                                    $html .= '</div>';
+                                    
+                                    // Show opening vs current comparison if available
+                                    if ($this->record->opening_total_balance) {
+                                        $difference = $totalBalance - $this->record->opening_total_balance;
+                                        $color = $difference >= 0 ? 'text-green-600' : 'text-red-600';
+                                        $html .= '<div class="' . $color . '">';
+                                        $html .= 'Perubahan dari Awal: ' . ($difference >= 0 ? '+' : '') . 'Rp ' . number_format($difference, 0, ',', '.');
+                                        $html .= '</div>';
+                                    }
+                                    
+                                    $html .= '<div class="mt-3 space-y-1">';
+                                    foreach ($paymentMethods as $method) {
+                                        $color = $method->is_cash ? 'text-green-600' : 'text-blue-600';
+                                        $icon = $method->is_cash ? '💰' : ($method->is_ewallet ? '📱' : '💳');
+                                        $html .= '<div class="flex justify-between items-center ' . $color . ' text-sm">';
+                                        $html .= '<span>' . $icon . ' ' . $method->name . '</span>';
+                                        $html .= '<span class="font-medium">Rp ' . number_format($method->balance, 0, ',', '.') . '</span>';
+                                        $html .= '</div>';
+                                    }
+                                    $html .= '</div></div>';
+                                    
+                                    return new \Illuminate\Support\HtmlString($html);
+                                }),
+                        ])
+                        ->collapsible(),
+                        
+                    Forms\Components\Section::make('Perhitungan Kas')
+                        ->description('Informasi perhitungan kas berdasarkan transaksi')
+                        ->schema([
+                            Forms\Components\Placeholder::make('cash_calculation')
+                                ->label('')
+                                ->content(function () {
+                                    $expectedCash = $this->record->opening_cash + $this->record->getCashSalesTotal() - $this->record->cash_out_amount;
+                                    $html = '<div class="space-y-2">';
+                                    $html .= '<div class="flex justify-between"><span>Kas Awal:</span><span class="font-medium">Rp ' . number_format($this->record->opening_cash, 0, ',', '.') . '</span></div>';
+                                    $html .= '<div class="flex justify-between"><span>Penjualan Tunai:</span><span class="font-medium text-green-600">+Rp ' . number_format($this->record->getCashSalesTotal(), 0, ',', '.') . '</span></div>';
+                                    $html .= '<div class="flex justify-between"><span>Pengeluaran Kas:</span><span class="font-medium text-red-600">-Rp ' . number_format($this->record->cash_out_amount, 0, ',', '.') . '</span></div>';
+                                    $html .= '<hr class="my-2">';
+                                    $html .= '<div class="flex justify-between text-lg font-semibold"><span>Kas yang Diharapkan:</span><span class="text-primary-600">Rp ' . number_format($expectedCash, 0, ',', '.') . '</span></div>';
+                                    $html .= '</div>';
+                                    return new \Illuminate\Support\HtmlString($html);
+                                }),
+                        ])
+                        ->collapsible(),
+                        
+                    Forms\Components\Section::make('Input Kas Fisik')
+                        ->description('Hitung uang tunai yang ada di laci kasir')
+                        ->schema([
+                            Forms\Components\TextInput::make('physical_cash_count')
+                                ->label('Jumlah Uang Tunai di Laci (Hasil Perhitungan Fisik)')
+                                ->helperText('Hitung secara fisik semua uang tunai yang ada di laci kasir')
+                                ->numeric()
+                                ->prefix('Rp')
+                                ->required()
+                                ->step(1000)
+                                ->minValue(0),
+                            Forms\Components\Textarea::make('cash_counting_notes')
+                                ->label('Catatan Perhitungan Kas')
+                                ->helperText('Catatan mengenai perhitungan kas fisik (opsional)')
+                                ->rows(2),
+                        ]),
+                        
+                    Forms\Components\Section::make('Catatan Penutupan')
+                        ->schema([
+                            Forms\Components\Textarea::make('closing_notes')
+                                ->label('Catatan Penutupan Shift')
+                                ->helperText('Catatan tambahan mengenai penutupan shift')
+                                ->rows(3),
+                        ])
+                        ->collapsible(),
                 ])
                 ->action(function (array $data) {
                     try {
                         $service = app(CashierShiftService::class);
-                        $shift = $service->closeShift(
+                        
+                        // Use enhanced balance tracking method
+                        $shift = $service->closeShiftWithBalanceTracking(
                             $this->record->id,
-                            $data['closing_cash'],
+                            $data['physical_cash_count'], // Use physical count as closing cash
+                            $data['physical_cash_count'], // Physical cash count
+                            [], // Cash denominations (can be enhanced later)
                             $data['closing_notes'] ?? null
                         );
                         
-                        $validation = $service->validateCashDifference($shift);
+                        // Get balance summary for notification
+                        $balanceSummary = $shift->getBalanceSummaryForDisplay();
+                        $differences = $shift->calculateBalanceDifferences();
+                        
+                        // Create detailed notification message
+                        $message = "Shift berhasil ditutup.\n";
+                        $message .= "Total Saldo: {$balanceSummary['closing_total']}\n";
+                        $message .= "Kas Fisik: {$balanceSummary['physical_cash']}\n";
+                        
+                        if ($differences['cash_counting_difference'] != 0) {
+                            $message .= "Selisih Kas: {$balanceSummary['cash_difference']}";
+                        }
+                        
+                        $notificationColor = 'success';
+                        if (abs($differences['total_difference']) > 1000) {
+                            $notificationColor = 'warning';
+                        }
                         
                         Notification::make()
                             ->title('Shift Berhasil Ditutup')
-                            ->body($validation['message'])
-                            ->color(match($validation['status']) {
-                                'ok' => 'success',
-                                'info' => 'info',
-                                'warning' => 'warning',
-                                default => 'success'
-                            })
+                            ->body($message)
+                            ->color($notificationColor)
                             ->send();
                             
                         $this->refreshFormData([
                             'closing_cash',
-                            'expected_cash',
-                            'cash_difference',
+                            'physical_cash_count',
+                            'closing_balance_snapshot',
+                            'closing_total_balance',
+                            'expected_total_balance',
+                            'total_balance_difference',
+                            'cash_counting_difference',
                             'status',
                             'closed_at'
                         ]);
@@ -304,6 +393,91 @@ class ViewCashierShift extends ViewRecord
                                         ($state > 0 ? 'success' : 
                                         ($state < 0 ? 'danger' : 'gray'))
                                     ),
+                            ]),
+                    ])
+                    ->collapsible(),
+
+                Infolists\Components\Section::make('Tracking Saldo Keseluruhan')
+                    ->description('Tracking semua metode pembayaran dari awal hingga akhir shift')
+                    ->schema([
+                        Infolists\Components\Grid::make(3)
+                            ->schema([
+                                Infolists\Components\TextEntry::make('opening_total_balance')
+                                    ->label('Total Saldo Awal')
+                                    ->formatStateUsing(fn ($state) => $state ? 'Rp ' . number_format($state, 0, ',', '.') : 'Belum dicatat')
+                                    ->icon('heroicon-o-play')
+                                    ->color('success'),
+                                Infolists\Components\TextEntry::make('closing_total_balance')
+                                    ->label('Total Saldo Akhir')
+                                    ->formatStateUsing(fn ($state) => $state ? 'Rp ' . number_format($state, 0, ',', '.') : 'Belum dicatat')
+                                    ->icon('heroicon-o-stop')
+                                    ->color('info'),
+                                Infolists\Components\TextEntry::make('calculated_cash_flow')
+                                    ->label('Cash Flow')
+                                    ->formatStateUsing(fn ($state) => $state ? 'Rp ' . number_format($state, 0, ',', '.') : 'Belum dihitung')
+                                    ->icon('heroicon-o-arrow-trending-up')
+                                    ->color('warning'),
+                            ]),
+                        Infolists\Components\Grid::make(3)
+                            ->schema([
+                                Infolists\Components\TextEntry::make('expected_total_balance')
+                                    ->label('Saldo yang Diharapkan')
+                                    ->formatStateUsing(fn ($state) => $state ? 'Rp ' . number_format($state, 0, ',', '.') : 'Belum dihitung')
+                                    ->icon('heroicon-o-calculator')
+                                    ->color('gray'),
+                                Infolists\Components\TextEntry::make('total_balance_difference')
+                                    ->label('Selisih Total Saldo')
+                                    ->formatStateUsing(fn ($state) => $state ? 'Rp ' . number_format($state, 0, ',', '.') : 'Belum dihitung')
+                                    ->icon('heroicon-o-scale')
+                                    ->color(fn ($state) => 
+                                        $state === null ? 'gray' : 
+                                        ($state > 0 ? 'success' : 
+                                        ($state < 0 ? 'danger' : 'gray'))
+                                    ),
+                                Infolists\Components\TextEntry::make('physical_cash_count')
+                                    ->label('Kas Fisik (Perhitungan)')
+                                    ->formatStateUsing(fn ($state) => $state ? 'Rp ' . number_format($state, 0, ',', '.') : 'Belum dihitung')
+                                    ->icon('heroicon-o-banknotes')
+                                    ->color('primary'),
+                            ]),
+                        Infolists\Components\Grid::make(2)
+                            ->schema([
+                                Infolists\Components\TextEntry::make('cash_counting_difference')
+                                    ->label('Selisih Kas Fisik vs Sistem')
+                                    ->formatStateUsing(fn ($state) => $state ? 'Rp ' . number_format($state, 0, ',', '.') : 'Belum dihitung')
+                                    ->icon('heroicon-o-exclamation-triangle')
+                                    ->color(fn ($state) => 
+                                        $state === null ? 'gray' : 
+                                        (abs($state) < 1000 ? 'success' : 
+                                        (abs($state) < 10000 ? 'warning' : 'danger'))
+                                    ),
+                                Infolists\Components\TextEntry::make('balance_comparison_summary')
+                                    ->label('Status Saldo')
+                                    ->state(function ($record) {
+                                        if (!$record->closing_total_balance) return 'Shift belum ditutup';
+                                        
+                                        $totalDiff = $record->total_balance_difference ?? 0;
+                                        $cashDiff = $record->cash_counting_difference ?? 0;
+                                        
+                                        if (abs($totalDiff) < 1000 && abs($cashDiff) < 1000) {
+                                            return '✅ Seimbang - Semua saldo sesuai';
+                                        } elseif (abs($totalDiff) < 10000 && abs($cashDiff) < 10000) {
+                                            return '⚠️ Perlu Perhatian - Ada selisih kecil';
+                                        } else {
+                                            return '❌ Tidak Seimbang - Perlu investigasi';
+                                        }
+                                    })
+                                    ->icon('heroicon-o-check-circle')
+                                    ->color(function ($record) {
+                                        if (!$record->closing_total_balance) return 'gray';
+                                        
+                                        $totalDiff = abs($record->total_balance_difference ?? 0);
+                                        $cashDiff = abs($record->cash_counting_difference ?? 0);
+                                        
+                                        if ($totalDiff < 1000 && $cashDiff < 1000) return 'success';
+                                        if ($totalDiff < 10000 && $cashDiff < 10000) return 'warning';
+                                        return 'danger';
+                                    }),
                             ]),
                     ])
                     ->collapsible(),

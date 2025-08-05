@@ -20,7 +20,17 @@ class CashierShift extends Model
         'opened_at',
         'closed_at',
         'opening_cash',
+        'opening_balance_snapshot',
+        'opening_total_balance',
         'closing_cash',
+        'closing_balance_snapshot',
+        'closing_total_balance',
+        'calculated_cash_flow',
+        'expected_total_balance',
+        'total_balance_difference',
+        'physical_cash_count',
+        'cash_denomination_count',
+        'cash_counting_difference',
         'expected_cash',
         'cash_difference',
         'location',
@@ -42,7 +52,17 @@ class CashierShift extends Model
         'opened_at' => 'datetime',
         'closed_at' => 'datetime',
         'opening_cash' => 'decimal:2',
+        'opening_balance_snapshot' => 'array',
+        'opening_total_balance' => 'decimal:2',
         'closing_cash' => 'decimal:2',
+        'closing_balance_snapshot' => 'array',
+        'closing_total_balance' => 'decimal:2',
+        'calculated_cash_flow' => 'decimal:2',
+        'expected_total_balance' => 'decimal:2',
+        'total_balance_difference' => 'decimal:2',
+        'physical_cash_count' => 'decimal:2',
+        'cash_denomination_count' => 'array',
+        'cash_counting_difference' => 'decimal:2',
         'expected_cash' => 'decimal:2', 
         'cash_difference' => 'decimal:2',
         'total_sales' => 'decimal:2',
@@ -415,5 +435,204 @@ class CashierShift extends Model
     {
         return $query->whereMonth('opened_at', now()->month)
             ->whereYear('opened_at', now()->year);
+    }
+
+    // ====== BALANCE TRACKING METHODS ======
+    
+    /**
+     * Capture snapshot of all payment method balances at shift opening
+     * Note: Only cash balance is set to opening_cash input, others remain as system values
+     */
+    public function captureOpeningBalanceSnapshot(): array
+    {
+        $balances = PaymentMethod::where('store_id', $this->store_id)
+            ->select('id', 'name', 'balance', 'is_cash', 'is_ewallet')
+            ->get()
+            ->map(function ($method) {
+                // For cash method, use the opening_cash input instead of system balance
+                $balance = $method->is_cash ? (float) $this->opening_cash : (float) $method->balance;
+                
+                return [
+                    'id' => $method->id,
+                    'name' => $method->name,
+                    'balance' => $balance,
+                    'is_cash' => $method->is_cash,
+                    'is_ewallet' => $method->is_ewallet,
+                    'type' => $method->is_cash ? 'cash' : ($method->is_ewallet ? 'ewallet' : 'other'),
+                ];
+            })
+            ->toArray();
+
+        $totalBalance = array_sum(array_column($balances, 'balance'));
+
+        $this->update([
+            'opening_balance_snapshot' => $balances,
+            'opening_total_balance' => $totalBalance,
+        ]);
+
+        return $balances;
+    }
+
+    /**
+     * Capture snapshot of all payment method balances at shift closing
+     */
+    public function captureClosingBalanceSnapshot(): array
+    {
+        $balances = PaymentMethod::where('store_id', $this->store_id)
+            ->select('id', 'name', 'balance', 'is_cash', 'is_ewallet')
+            ->get()
+            ->map(function ($method) {
+                return [
+                    'id' => $method->id,
+                    'name' => $method->name,
+                    'balance' => (float) $method->balance,
+                    'is_cash' => $method->is_cash,
+                    'is_ewallet' => $method->is_ewallet,
+                    'type' => $method->is_cash ? 'cash' : ($method->is_ewallet ? 'ewallet' : 'other'),
+                ];
+            })
+            ->toArray();
+
+        $totalBalance = array_sum(array_column($balances, 'balance'));
+
+        $this->update([
+            'closing_balance_snapshot' => $balances,
+            'closing_total_balance' => $totalBalance,
+        ]);
+
+        return $balances;
+    }
+
+    /**
+     * Calculate expected total balance based on opening balance + cash flows
+     */
+    public function calculateExpectedTotalBalance(): float
+    {
+        $openingBalance = $this->opening_total_balance ?? 0;
+        $cashFlow = $this->calculateTotalCashFlow();
+        
+        $expectedBalance = $openingBalance + $cashFlow;
+        
+        $this->update([
+            'calculated_cash_flow' => $cashFlow,
+            'expected_total_balance' => $expectedBalance,
+        ]);
+        
+        return $expectedBalance;
+    }
+
+    /**
+     * Calculate total cash flow during shift (sales, transactions, cash outs)
+     */
+    public function calculateTotalCashFlow(): float
+    {
+        // Sales income (all payment methods)
+        $salesIncome = $this->getTotalSales();
+        
+        // Transaction profits (admin fees, etc)
+        $transactionProfits = $this->getTotalTransactionProfit();
+        
+        // Cash outs (expenses)
+        $cashOuts = $this->cash_out_amount ?? 0;
+        
+        // Total cash flow = income - expenses
+        return $salesIncome + $transactionProfits - $cashOuts;
+    }
+
+    /**
+     * Calculate balance differences between expected and actual
+     */
+    public function calculateBalanceDifferences(): array
+    {
+        $expectedTotal = $this->expected_total_balance ?? $this->calculateExpectedTotalBalance();
+        $actualTotal = $this->closing_total_balance ?? 0;
+        $totalDifference = $actualTotal - $expectedTotal;
+
+        // Cash counting difference (physical vs system)
+        $systemCashBalance = $this->getSystemCashBalance();
+        $physicalCashCount = $this->physical_cash_count ?? 0;
+        $cashCountingDifference = $physicalCashCount - $systemCashBalance;
+
+        $this->update([
+            'total_balance_difference' => $totalDifference,
+            'cash_counting_difference' => $cashCountingDifference,
+        ]);
+
+        return [
+            'total_difference' => $totalDifference,
+            'cash_counting_difference' => $cashCountingDifference,
+            'expected_total' => $expectedTotal,
+            'actual_total' => $actualTotal,
+            'system_cash' => $systemCashBalance,
+            'physical_cash' => $physicalCashCount,
+        ];
+    }
+
+    /**
+     * Get current system cash balance
+     */
+    public function getSystemCashBalance(): float
+    {
+        $cashMethod = PaymentMethod::where('store_id', $this->store_id)
+            ->where('is_cash', true)
+            ->first();
+            
+        return $cashMethod ? (float) $cashMethod->balance : 0;
+    }
+
+    /**
+     * Set physical cash count with denomination breakdown
+     */
+    public function setPhysicalCashCount(float $totalCount, array $denominations = []): void
+    {
+        $this->update([
+            'physical_cash_count' => $totalCount,
+            'cash_denomination_count' => $denominations,
+        ]);
+    }
+
+    /**
+     * Get balance comparison report
+     */
+    public function getBalanceComparisonReport(): array
+    {
+        $opening = $this->opening_balance_snapshot ?? [];
+        $closing = $this->closing_balance_snapshot ?? [];
+        
+        $comparison = [];
+        
+        foreach ($opening as $openMethod) {
+            $closingMethod = collect($closing)->firstWhere('id', $openMethod['id']);
+            
+            $comparison[] = [
+                'id' => $openMethod['id'],
+                'name' => $openMethod['name'],
+                'type' => $openMethod['type'] ?? ($openMethod['is_cash'] ? 'cash' : ($openMethod['is_ewallet'] ? 'ewallet' : 'other')),
+                'opening_balance' => $openMethod['balance'],
+                'closing_balance' => $closingMethod['balance'] ?? 0,
+                'difference' => ($closingMethod['balance'] ?? 0) - $openMethod['balance'],
+                'is_cash' => $openMethod['is_cash'],
+                'is_ewallet' => $openMethod['is_ewallet'],
+            ];
+        }
+        
+        return $comparison;
+    }
+
+    /**
+     * Get formatted balance summary for display
+     */
+    public function getBalanceSummaryForDisplay(): array
+    {
+        return [
+            'opening_total' => 'Rp ' . number_format($this->opening_total_balance ?? 0, 0, ',', '.'),
+            'closing_total' => 'Rp ' . number_format($this->closing_total_balance ?? 0, 0, ',', '.'),
+            'expected_total' => 'Rp ' . number_format($this->expected_total_balance ?? 0, 0, ',', '.'),
+            'cash_flow' => 'Rp ' . number_format($this->calculated_cash_flow ?? 0, 0, ',', '.'),
+            'total_difference' => 'Rp ' . number_format($this->total_balance_difference ?? 0, 0, ',', '.'),
+            'physical_cash' => 'Rp ' . number_format($this->physical_cash_count ?? 0, 0, ',', '.'),
+            'system_cash' => 'Rp ' . number_format($this->getSystemCashBalance(), 0, ',', '.'),
+            'cash_difference' => 'Rp ' . number_format($this->cash_counting_difference ?? 0, 0, ',', '.'),
+        ];
     }
 }

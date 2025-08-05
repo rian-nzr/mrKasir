@@ -1,328 +1,593 @@
 <!DOCTYPE html>
 <html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Laporan Shift Kasir - {{ $shift->shift_number }}</title>
-    <style>
-        body {
-            font-family: 'DejaVu Sans', Arial, sans-serif;
-            font-size: 12px;
-            line-height: 1.4;
-            color: #333;
-            margin: 20px;
-        }
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
-            border-bottom: 2px solid #333;
-            padding-bottom: 20px;
-        }
-        .header h1 {
-            font-size: 20px;
-            margin: 0 0 10px 0;
-            color: #2563eb;
-        }
-        .header h2 {
-            font-size: 16px;
-            margin: 0;
-            color: #666;
-        }
-        .info-grid {
-            display: table;
-            width: 100%;
-            margin-bottom: 25px;
-        }
-        .info-row {
-            display: table-row;
-        }
-        .info-label {
-            display: table-cell;
-            font-weight: bold;
-            width: 25%;
-            padding: 5px 10px 5px 0;
-        }
-        .info-value {
-            display: table-cell;
-            padding: 5px 0;
-        }
-        .section {
-            margin-bottom: 30px;
-        }
-        .section-title {
-            font-size: 14px;
-            font-weight: bold;
-            color: #2563eb;
-            border-bottom: 1px solid #ddd;
-            padding-bottom: 5px;
-            margin-bottom: 15px;
-        }
-        .summary-grid {
-            display: table;
-            width: 100%;
-            margin-bottom: 20px;
-        }
-        .summary-row {
-            display: table-row;
-        }
-        .summary-label {
-            display: table-cell;
-            font-weight: bold;
-            width: 60%;
-            padding: 8px 10px 8px 0;
-            border-bottom: 1px solid #eee;
-        }
-        .summary-value {
-            display: table-cell;
-            text-align: right;
-            padding: 8px 0;
-            border-bottom: 1px solid #eee;
-        }
-        .table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 20px;
-        }
-        .table th,
-        .table td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: left;
-        }
-        .table th {
-            background-color: #f8fafc;
-            font-weight: bold;
-            text-align: center;
-        }
-        .text-right {
-            text-align: right;
-        }
-        .text-center {
-            text-align: center;
-        }
-        .currency {
-            font-family: 'DejaVu Sans Mono', monospace;
-        }
-        .footer {
-            margin-top: 40px;
-            padding-top: 20px;
-            border-top: 1px solid #ddd;
-            font-size: 10px;
-            color: #666;
-            text-align: center;
-        }
-        .highlight {
-            background-color: #fef3c7;
-            padding: 10px;
-            border-left: 4px solid #f59e0b;
-            margin: 15px 0;
-        }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <h1>LAPORAN SHIFT KASIR</h1>
-        <h2>{{ $shift->store->name ?? 'Toko' }}</h2>
-        <p>{{ $shift->shift_number }}</p>
-    </div>
-
-    <div class="section">
-        <div class="section-title">INFORMASI SHIFT</div>
-        <div class="info-grid">
-            <div class="info-row">
-                <div class="info-label">Kasir:</div>
-                <div class="info-value">{{ $shift->user->name }}</div>
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Laporan Shift Kasir - {{ $shift->shift_number }}</title>
+        <style>
+            body {
+                font-family: "DejaVu Sans", Arial, sans-serif;
+                font-size: 11px;
+                line-height: 1.4;
+                color: #333;
+                margin: 15px;
+            }
+            .header {
+                text-align: center;
+                margin-bottom: 25px;
+                border-bottom: 3px solid #2563eb;
+                padding-bottom: 15px;
+                background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+                padding: 20px;
+                border-radius: 8px;
+            }
+            .header h1 {
+                font-size: 22px;
+                margin: 0 0 8px 0;
+                color: #1e40af;
+                font-weight: bold;
+            }
+            .header h2 {
+                font-size: 16px;
+                margin: 0 0 5px 0;
+                color: #374151;
+            }
+            .header .shift-info {
+                font-size: 12px;
+                color: #6b7280;
+                margin: 5px 0;
+            }
+            .info-grid {
+                display: table;
+                width: 100%;
+                margin-bottom: 20px;
+                border: 1px solid #e5e7eb;
+                border-radius: 6px;
+            }
+            .info-row {
+                display: table-row;
+            }
+            .info-row:nth-child(even) {
+                background-color: #f9fafb;
+            }
+            .info-label {
+                display: table-cell;
+                font-weight: bold;
+                width: 30%;
+                padding: 8px 12px;
+                color: #374151;
+                border-right: 1px solid #e5e7eb;
+            }
+            .info-value {
+                display: table-cell;
+                padding: 8px 12px;
+                color: #111827;
+            }
+            .section {
+                margin-bottom: 25px;
+                page-break-inside: avoid;
+            }
+            .section-title {
+                font-size: 14px;
+                font-weight: bold;
+                color: #1f2937;
+                background-color: #3b82f6;
+                color: white;
+                padding: 8px 12px;
+                margin-bottom: 12px;
+                border-radius: 4px;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+            }
+            .summary-grid {
+                display: table;
+                width: 100%;
+                margin-bottom: 15px;
+                border: 1px solid #d1d5db;
+                border-radius: 6px;
+            }
+            .summary-row {
+                display: table-row;
+            }
+            .summary-row:nth-child(even) {
+                background-color: #f3f4f6;
+            }
+            .summary-label {
+                display: table-cell;
+                font-weight: 600;
+                width: 60%;
+                padding: 10px 12px;
+                color: #374151;
+                border-right: 1px solid #d1d5db;
+            }
+            .summary-value {
+                display: table-cell;
+                padding: 10px 12px;
+                text-align: right;
+                font-weight: bold;
+                color: #059669;
+            }
+            .table {
+                width: 100%;
+                border-collapse: collapse;
+                margin-bottom: 15px;
+                background-color: white;
+                border-radius: 6px;
+                overflow: hidden;
+                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            }
+            .table th {
+                background-color: #4f46e5;
+                color: white;
+                font-weight: bold;
+                padding: 8px;
+                text-align: left;
+                font-size: 10px;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+            }
+            .table td {
+                padding: 6px 8px;
+                border-bottom: 1px solid #e5e7eb;
+                font-size: 10px;
+            }
+            .table tbody tr:nth-child(even) {
+                background-color: #f8fafc;
+            }
+            .table tbody tr:hover {
+                background-color: #e0f2fe;
+            }
+            .text-center {
+                text-align: center;
+            }
+            .text-right {
+                text-align: right;
+            }
+            .page-break {
+                page-break-before: always;
+            }
+            .status-badge {
+                padding: 4px 8px;
+                border-radius: 12px;
+                font-size: 9px;
+                font-weight: bold;
+                text-transform: uppercase;
+            }
+            .status-active {
+                background-color: #10b981;
+                color: white;
+            }
+            .status-closed {
+                background-color: #6b7280;
+                color: white;
+            }
+            .currency {
+                font-family: "DejaVu Sans Mono", monospace;
+            }
+            .footer {
+                margin-top: 40px;
+                padding-top: 20px;
+                border-top: 1px solid #ddd;
+                font-size: 10px;
+                color: #666;
+                text-align: center;
+            }
+            .highlight {
+                background-color: #fef3c7;
+                padding: 10px;
+                border-left: 4px solid #f59e0b;
+                margin: 15px 0;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="header">
+            <h1>📊 LAPORAN SHIFT KASIR</h1>
+            <h2>{{ $shift->store->name ?? 'Toko' }}</h2>
+            <div class="shift-info">
+                <strong>Shift #{{ $shift->shift_number }}</strong> |
+                <span
+                    class="status-badge {{ $shift->status === 'active' ? 'status-active' : 'status-closed' }}"
+                >
+                    {{ strtoupper($shift->status) }}
+                </span>
             </div>
-            <div class="info-row">
-                <div class="info-label">Mulai Shift:</div>
-                <div class="info-value">{{ $shift->opened_at->format('d/m/Y H:i:s') }}</div>
-            </div>
-            <div class="info-row">
-                <div class="info-label">Selesai Shift:</div>
-                <div class="info-value">{{ $shift->closed_at ? $shift->closed_at->format('d/m/Y H:i:s') : 'Belum ditutup' }}</div>
-            </div>
-            <div class="info-row">
-                <div class="info-label">Status:</div>
-                <div class="info-value">{{ ucfirst($shift->status) }}</div>
-            </div>
-            @if($shift->location)
-            <div class="info-row">
-                <div class="info-label">Lokasi:</div>
-                <div class="info-value">{{ $shift->location }}</div>
-            </div>
-            @endif
         </div>
-    </div>
-
-    <div class="section">
-        <div class="section-title">RINGKASN PENJUALAN</div>
-        <div class="summary-grid">
-            <div class="summary-row">
-                <div class="summary-label">Total Transaksi:</div>
-                <div class="summary-value">{{ $sales_summary['total_transactions'] ?? 0 }}</div>
-            </div>
-            <div class="summary-row">
-                <div class="summary-label">Penjualan Kotor:</div>
-                <div class="summary-value currency">Rp {{ number_format($sales_summary['gross_sales'] ?? 0, 0, ',', '.') }}</div>
-            </div>
-            <div class="summary-row">
-                <div class="summary-label">Total Diskon:</div>
-                <div class="summary-value currency">Rp {{ number_format($sales_summary['total_discounts'] ?? 0, 0, ',', '.') }}</div>
-            </div>
-            <div class="summary-row">
-                <div class="summary-label">Penjualan Bersih:</div>
-                <div class="summary-value currency"><strong>Rp {{ number_format($sales_summary['net_sales'] ?? 0, 0, ',', '.') }}</strong></div>
-            </div>
-            <div class="summary-row">
-                <div class="summary-label">Rata-rata per Transaksi:</div>
-                <div class="summary-value currency">Rp {{ number_format($sales_summary['average_transaction'] ?? 0, 0, ',', '.') }}</div>
-            </div>
-            <div class="summary-row">
-                <div class="summary-label">Transaksi Terbesar:</div>
-                <div class="summary-value currency">Rp {{ number_format($sales_summary['largest_transaction'] ?? 0, 0, ',', '.') }}</div>
-            </div>
-            <div class="summary-row">
-                <div class="summary-label">Transaksi Terkecil:</div>
-                <div class="summary-value currency">Rp {{ number_format($sales_summary['smallest_transaction'] ?? 0, 0, ',', '.') }}</div>
-            </div>
-        </div>
-    </div>
-
-    @if(isset($payment_breakdown) && count($payment_breakdown) > 0)
-    <div class="section">
-        <div class="section-title">METODE PEMBAYARAN</div>
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>Metode Pembayaran</th>
-                    <th>Jenis</th>
-                    <th>Jumlah Transaksi</th>
-                    <th>Total Nilai</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach($payment_breakdown as $payment)
-                <tr>
-                    <td>{{ $payment['name'] ?? 'N/A' }}</td>
-                    <td class="text-center">{{ ucfirst($payment['type'] ?? 'other') }}</td>
-                    <td class="text-center">{{ $payment['count'] ?? 0 }}</td>
-                    <td class="text-right currency">{{ $payment['formatted_amount'] ?? 'Rp 0' }}</td>
-                </tr>
-                @endforeach
-            </tbody>
-        </table>
-    </div>
-    @endif
-
-    @if(isset($product_sales) && count($product_sales) > 0)
-    <div class="section">
-        <div class="section-title">PRODUK TERLARIS (Top 20)</div>
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>No</th>
-                    <th>Nama Produk</th>
-                    <th>Harga Satuan</th>
-                    <th>Qty Terjual</th>
-                    <th>Total Penjualan</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach($product_sales as $index => $product)
-                <tr>
-                    <td class="text-center">{{ $index + 1 }}</td>
-                    <td>{{ $product['name'] ?? 'N/A' }}</td>
-                    <td class="text-right currency">Rp {{ number_format($product['price'] ?? 0, 0, ',', '.') }}</td>
-                    <td class="text-center">{{ $product['quantity'] ?? 0 }}</td>
-                    <td class="text-right currency">{{ $product['formatted_sales'] ?? 'Rp 0' }}</td>
-                </tr>
-                @endforeach
-            </tbody>
-        </table>
-    </div>
-    @endif
-
-    <div class="section">
-        <div class="section-title">MANAJEMEN KAS</div>
-        <div class="summary-grid">
-            <div class="summary-row">
-                <div class="summary-label">Kas Awal:</div>
-                <div class="summary-value currency">Rp {{ number_format($cash_management['opening_cash'] ?? 0, 0, ',', '.') }}</div>
-            </div>
-            @if($shift->isClosed())
-            <div class="summary-row">
-                <div class="summary-label">Kas Akhir (Aktual):</div>
-                <div class="summary-value currency">Rp {{ number_format($cash_management['closing_cash'] ?? 0, 0, ',', '.') }}</div>
-            </div>
-            <div class="summary-row">
-                <div class="summary-label">Kas Akhir (Diharapkan):</div>
-                <div class="summary-value currency">Rp {{ number_format($cash_management['expected_cash'] ?? 0, 0, ',', '.') }}</div>
-            </div>
-            <div class="summary-row">
-                <div class="summary-label">Selisih Kas:</div>
-                <div class="summary-value currency">
-                    @php
-                        $cashDiff = $cash_management['cash_difference'] ?? 0;
-                        $diffColor = $cashDiff >= 0 ? 'green' : 'red';
-                    @endphp
-                    <strong style="color: '{{ $diffColor }}'">
-                        Rp {{ number_format($cashDiff, 0, ',', '.') }}
-                    </strong>
+        <!-- INFORMASI SHIFT -->
+        <div class="section">
+            <div class="section-title">📋 INFORMASI SHIFT</div>
+            <div class="info-grid">
+                <div class="info-row">
+                    <div class="info-label">👤 Kasir</div>
+                    <div class="info-value">
+                        {{ $shift->user->name ?? 'N/A' }}
+                    </div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">🏪 Toko</div>
+                    <div class="info-value">
+                        {{ $shift->store->name ?? 'N/A' }}
+                    </div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">🆔 No. Shift</div>
+                    <div class="info-value">{{ $shift->shift_number }}</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">📅 Tanggal</div>
+                    <div class="info-value">
+                        {{ $shift->created_at->format('d/m/Y') }}
+                    </div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">🕐 Jam Buka</div>
+                    <div class="info-value">
+                        {{ $shift->opened_at ? $shift->opened_at->format('H:i:s') : 'Belum dibuka' }}
+                    </div>
+                </div>
+                @if($shift->closed_at && $shift->opened_at)
+                <div class="info-row">
+                    <div class="info-label">🕐 Jam Tutup</div>
+                    <div class="info-value">
+                        {{ $shift->closed_at->format('H:i:s') }}
+                    </div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">⏱️ Durasi Shift</div>
+                    <div class="info-value">
+                        {{ $shift->closed_at->diff($shift->opened_at)->format('%H jam %I menit') }}
+                    </div>
+                </div>
+                @endif
+                <div class="info-row">
+                    <div class="info-label">📍 Status</div>
+                    <div class="info-value">
+                        @if($shift->location)
+                        <span
+                            class="status-badge {{ $shift->status === 'active' ? 'status-active' : 'status-closed' }}"
+                        >
+                            {{ ucfirst($shift->status) }}
+                        </span>
+                        @endif
+                    </div>
                 </div>
             </div>
+        </div>
+        @if(isset($balance_tracking))
+        <!-- SALDO AWAL -->
+        <div class="section">
+            <div class="section-title">💰 SALDO AWAL KASIR</div>
+            <div class="summary-grid">
+                <div class="summary-row">
+                    <div class="summary-label">💵 Total Saldo Awal</div>
+                    <div class="summary-value currency">
+                        {{
+                            $balance_tracking["opening_balance_formatted"] ??
+                                "Rp 0"
+                        }}
+                    </div>
+                </div>
+            </div>
+            @if(isset($balance_tracking['opening_balance_breakdown']) &&
+            is_array($balance_tracking['opening_balance_breakdown']))
+            <div class="section">
+                <div class="section-title">📊 BREAKDOWN SALDO AWAL</div>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>💳 Metode Pembayaran</th>
+                            <th>💰 Jumlah</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($balance_tracking['opening_balance_breakdown']
+                        as $method)
+                        <tr>
+                            <td>{{ $method["name"] ?? "N/A" }}</td>
+                            <td class="text-right currency">
+                                {{ $method["formatted_amount"] ?? "Rp 0" }}
+                            </td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
             @endif
-            <div class="summary-row">
-                <div class="summary-label">Total Tarik Tunai:</div>
-                <div class="summary-value currency">Rp {{ number_format($cash_management['cash_outs'] ?? 0, 0, ',', '.') }}</div>
+        </div>
+        @if($shift->status === 'closed' &&
+        isset($balance_tracking['closing_balance_breakdown']))
+        <!-- SALDO AKHIR -->
+        <div class="section">
+            <div class="section-title">🏦 SALDO AKHIR KASIR</div>
+            <div class="summary-grid">
+                <div class="summary-row">
+                    <div class="summary-label">💵 Total Saldo Akhir</div>
+                    <div class="summary-value currency">
+                        {{
+                            $balance_tracking["closing_balance_formatted"] ??
+                                "Rp 0"
+                        }}
+                    </div>
+                </div>
+                <div class="summary-row">
+                    <div class="summary-label">📈 Selisih Saldo</div>
+                    <div
+                        class="summary-value currency"
+                        style="color: {{
+                            ($balance_tracking['balance_difference'] ?? 0) >= 0
+                                ? '#059669'
+                                : '#dc2626'
+                        }};"
+                    >
+                        {{
+                            $balance_tracking["balance_difference_formatted"] ??
+                                "Rp 0"
+                        }}
+                    </div>
+                </div>
+                <div class="summary-row">
+                    <div class="summary-label">🎯 Status Saldo</div>
+                    <div
+                        class="summary-value"
+                        style="color: {{
+                            ($balance_tracking['balance_difference'] ?? 0) >= 0
+                                ? '#059669'
+                                : '#dc2626'
+                        }};"
+                    >
+                        {{
+                            ($balance_tracking["balance_difference"] ?? 0) >= 0
+                                ? "✅ Sesuai/Lebih"
+                                : "⚠️ Kurang"
+                        }}
+                    </div>
+                </div>
+            </div>
+            <div class="section">
+                <div class="section-title">📊 BREAKDOWN SALDO AKHIR</div>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>💳 Metode Pembayaran</th>
+                            <th>💰 Saldo Awal</th>
+                            <th>📊 Penjualan</th>
+                            <th>🏦 Saldo Akhir</th>
+                            <th>📈 Selisih</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($balance_tracking['closing_balance_breakdown']
+                        as $method)
+                        <tr>
+                            <td>{{ $method["name"] ?? "N/A" }}</td>
+                            <td class="text-right currency">
+                                {{ $method["opening_formatted"] ?? "Rp 0" }}
+                            </td>
+                            <td class="text-right currency">
+                                {{ $method["sales_formatted"] ?? "Rp 0" }}
+                            </td>
+                            <td class="text-right currency">
+                                {{ $method["closing_formatted"] ?? "Rp 0" }}
+                            </td>
+                            <td
+                                class="text-right currency"
+                                style="color: {{
+                                    ($method['difference'] ?? 0) >= 0
+                                        ? '#059669'
+                                        : '#dc2626'
+                                }};"
+                            >
+                                {{ $method["difference_formatted"] ?? "Rp 0" }}
+                            </td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
             </div>
         </div>
-    </div>
-
-    @if(isset($hourly_sales) && count($hourly_sales) > 0)
-    <div class="section">
-        <div class="section-title">PENJUALAN PER JAM</div>
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>Jam</th>
-                    <th>Jumlah Transaksi</th>
-                    <th>Total Penjualan</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach($hourly_sales as $hour)
-                <tr>
-                    <td class="text-center">{{ $hour['hour'] ?? 'N/A' }}</td>
-                    <td class="text-center">{{ $hour['transactions'] ?? 0 }}</td>
-                    <td class="text-right currency">Rp {{ number_format($hour['sales'] ?? 0, 0, ',', '.') }}</td>
-                </tr>
-                @endforeach
-            </tbody>
-        </table>
-    </div>
-    @endif
-
-    @if($shift->notes || $shift->closing_notes)
-    <div class="section">
-        <div class="section-title">CATATAN</div>
-        @if($shift->notes)
-        <div class="highlight">
-            <strong>Catatan Buka Shift:</strong><br>
-            {{ $shift->notes }}
+        @endif @endif
+        <!-- RINGKASAN PENJUALAN -->
+        <div class="section">
+            <div class="section-title">📈 RINGKASAN PENJUALAN</div>
+            <div class="summary-grid">
+                <div class="summary-row">
+                    <div class="summary-label">🛒 Total Transaksi</div>
+                    <div class="summary-value">
+                        {{
+                            $sales_summary["total_transactions"] ?? 0
+                        }}
+                        transaksi
+                    </div>
+                </div>
+                <div class="summary-row">
+                    <div class="summary-label">📦 Total Item Terjual</div>
+                    <div class="summary-value">
+                        {{ $sales_summary["total_items"] ?? 0 }} item
+                    </div>
+                </div>
+                <div class="summary-row">
+                    <div class="summary-label">💰 Total Penjualan</div>
+                    <div class="summary-value currency">
+                        {{ $sales_summary["total_sales_formatted"] ?? "Rp 0" }}
+                    </div>
+                </div>
+                <div class="summary-row">
+                    <div class="summary-label">💸 Total Diskon</div>
+                    <div class="summary-value currency" style="color: #dc2626">
+                        {{
+                            $sales_summary["total_discount_formatted"] ?? "Rp 0"
+                        }}
+                    </div>
+                </div>
+                <div class="summary-row">
+                    <div class="summary-label">🧾 Total Pajak</div>
+                    <div class="summary-value currency">
+                        {{ $sales_summary["total_tax_formatted"] ?? "Rp 0" }}
+                    </div>
+                </div>
+                <div class="summary-row">
+                    <div class="summary-label">💯 Penjualan Bersih</div>
+                    <div class="summary-value currency">
+                        {{ $sales_summary["net_sales_formatted"] ?? "Rp 0" }}
+                    </div>
+                </div>
+                @if(isset($sales_summary['profit_total']))
+                <div class="summary-row">
+                    <div class="summary-label">📊 Total Profit</div>
+                    <div class="summary-value currency" style="color: #059669">
+                        {{ $sales_summary["profit_total_formatted"] ?? "Rp 0" }}
+                    </div>
+                </div>
+                @endif
+            </div>
+        </div>
+        @if(isset($payment_breakdown) && count($payment_breakdown) > 0)
+        <div class="section">
+            <div class="section-title">💳 BREAKDOWN PEMBAYARAN</div>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>💳 Metode Pembayaran</th>
+                        <th>🏷️ Jenis</th>
+                        <th>🔢 Jumlah Transaksi</th>
+                        <th>💰 Total Nilai</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($payment_breakdown as $payment)
+                    <tr>
+                        <td>{{ $payment["name"] ?? "N/A" }}</td>
+                        <td class="text-center">
+                            {{ ucfirst($payment["type"] ?? "other") }}
+                        </td>
+                        <td class="text-center">
+                            {{ $payment["count"] ?? 0 }}
+                        </td>
+                        <td class="text-right currency">
+                            {{ $payment["formatted_amount"] ?? "Rp 0" }}
+                        </td>
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+        @endif @if(isset($product_sales) && count($product_sales) > 0)
+        <div class="section page-break">
+            <div class="section-title">🏆 PRODUK TERLARIS (Top 20)</div>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>🥇 Ranking</th>
+                        <th>📦 Nama Produk</th>
+                        <th>💰 Harga Satuan</th>
+                        <th>🔢 Qty Terjual</th>
+                        <th>💸 Total Penjualan</th>
+                        <th>📊 Profit</th>
+                        <th>📈 % dari Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach(array_slice($product_sales, 0, 20) as $index =>
+                    $product)
+                    <tr>
+                        <td class="text-center">
+                            @if($index === 0) 🥇 @elseif($index === 1) 🥈
+                            @elseif($index === 2) 🥉 @else
+                            {{ $index + 1 }} @endif
+                        </td>
+                        <td>{{ $product["name"] ?? "N/A" }}</td>
+                        <td class="text-right currency">
+                            {{ $product["price_formatted"] ?? "Rp 0" }}
+                        </td>
+                        <td class="text-center">
+                            {{ $product["quantity"] ?? 0 }}
+                        </td>
+                        <td class="text-right currency">
+                            {{ $product["total_formatted"] ?? "Rp 0" }}
+                        </td>
+                        <td class="text-right currency">
+                            {{ $product["profit_formatted"] ?? "Rp 0" }}
+                        </td>
+                        <td class="text-center">
+                            {{ $product["percentage"] ?? "0" }}%
+                        </td>
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+        @endif @if(isset($cash_flow_history) && count($cash_flow_history) > 0)
+        <div class="section">
+            <div class="section-title">💹 RIWAYAT ARUS KAS</div>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>🕐 Waktu</th>
+                        <th>📋 Jenis Transaksi</th>
+                        <th>💰 Jumlah</th>
+                        <th>🏦 Saldo Setelah</th>
+                        <th>📝 Keterangan</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($cash_flow_history as $flow)
+                    <tr>
+                        <td>{{ $flow["time"] ?? "N/A" }}</td>
+                        <td>{{ $flow["type"] ?? "N/A" }}</td>
+                        <td
+                            class="text-right currency"
+                            style="color: {{
+                                ($flow['amount'] ?? 0) >= 0
+                                    ? '#059669'
+                                    : '#dc2626'
+                            }};"
+                        >
+                            {{ $flow["formatted_amount"] ?? "Rp 0" }}
+                        </td>
+                        <td class="text-right currency">
+                            {{ $flow["balance_after_formatted"] ?? "Rp 0" }}
+                        </td>
+                        <td>{{ $flow["description"] ?? "-" }}</td>
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+        @endif @if(isset($recommendations) && count($recommendations) > 0)
+        <div class="section">
+            <div class="section-title">💡 REKOMENDASI & INSIGHTS</div>
+            @foreach($recommendations as $rec)
+            <div class="highlight">
+                <strong>{{ $rec["title"] ?? "Rekomendasi" }}</strong
+                ><br />
+                {{ $rec["message"] ?? "N/A" }}
+            </div>
+            @endforeach
         </div>
         @endif
-        @if($shift->closing_notes)
-        <div class="highlight">
-            <strong>Catatan Tutup Shift:</strong><br>
-            {{ $shift->closing_notes }}
+        <div class="footer">
+            <p>
+                <strong
+                    >📄 Laporan ini dibuat secara otomatis pada
+                    {{ now()->format('d/m/Y H:i:s') }}</strong
+                >
+            </p>
+            <p>
+                {{ config("app.name", "POS System") }} - Sistem Manajemen Kasir
+                v2.0
+            </p>
+            <p>
+                🔒 Dokumen ini bersifat rahasia dan hanya untuk keperluan
+                internal
+            </p>
+            @if($shift->status === 'active')
+            <p style="color: #dc2626">
+                <strong
+                    >⚠️ PERHATIAN: Shift masih aktif - Data dapat
+                    berubah</strong
+                >
+            </p>
+            @endif
         </div>
-        @endif
-    </div>
-    @endif
-
-    <div class="footer">
-        <p>Laporan ini dibuat secara otomatis pada {{ now()->format('d/m/Y H:i:s') }}</p>
-        <p>{{ config('app.name', 'POS System') }} - Sistem Manajemen Kasir</p>
-    </div>
-</body>
+    </body>
 </html>
