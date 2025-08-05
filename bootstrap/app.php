@@ -14,6 +14,12 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->alias([
             'ensure.store.selected' => \App\Http\Middleware\EnsureStoreSelected::class,
+            'store' => \App\Http\Middleware\StoreMiddleware::class,
+        ]);
+        
+        // Apply store middleware globally for web routes
+        $middleware->web(append: [
+            \App\Http\Middleware\StoreMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

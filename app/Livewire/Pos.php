@@ -415,13 +415,20 @@ class Pos extends Component implements HasForms
             ->danger()
             ->send();
         } else {
+            // Ambil shift aktif untuk auto-assignment
+            $activeShift = \App\Models\CashierShift::where('store_id', auth()->user()->store_id)
+                ->where('status', \App\Models\CashierShift::STATUS_OPEN)
+                ->first();
+            
             // Buat order
             $order = Order::create([
                 'name' => $this->name,
                 'total_price' => $total,
                 'paid_amount' => $this->paid_amount,
                 'change_amount' => $this->change_amount,
-                'payment_method_id' => $payment_method_id_temp
+                'payment_method_id' => $payment_method_id_temp,
+                'store_id' => auth()->user()->store_id,
+                'cashier_shift_id' => $activeShift ? $activeShift->id : null,
             ]);
             
             // Buat order products

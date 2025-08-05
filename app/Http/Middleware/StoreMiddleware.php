@@ -17,9 +17,8 @@ class StoreMiddleware
      */
     public function handle(Request $request, Closure $next): Response
     {
-        // Skip middleware untuk semua route admin, authentication dan store
-        if ($request->is('admin*') || 
-            $request->routeIs(['filament.*', 'logout', 'store.*', 'login*'])) {
+        // Skip middleware untuk authentication routes
+        if ($request->routeIs(['logout', 'login*'])) {
             return $next($request);
         }
 
@@ -30,13 +29,27 @@ class StoreMiddleware
 
         $user = Auth::user();
         
-        // Cek apakah user punya store_id
+        // Super admin has full access without store restrictions
+        if ($user->hasRole('super_admin')) {
+            // Super admin can access all stores - no restrictions
+            // Optionally set selected store if provided in request
+            if ($request->has('store_id')) {
+                Session::put('selected_store_id', $request->input('store_id'));
+            }
+            // If no store selected, super admin sees all data
+            return $next($request);
+        }
+        
+        // Cek apakah user punya store_id tetap (seperti kasir/admin)
         if ($user->store_id) {
             // Set store dari user ke session
             Session::put('selected_store_id', $user->store_id);
         } else {
-            // Jika user tidak punya store, biarkan default behavior
-            // atau redirect ke halaman assign store jika diperlukan
+            // For non-super admin users without store_id, might need store selection
+            if (!Session::has('selected_store_id')) {
+                // Could redirect to store selection or show error
+                // For now, let it pass
+            }
         }
 
         return $next($request);

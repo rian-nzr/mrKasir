@@ -90,9 +90,6 @@ class AdminPanelProvider extends PanelProvider
             ->sidebarCollapsibleOnDesktop()
             ->font('poppins')
             ->plugins([
-                \BezhanSalleh\FilamentShield\FilamentShieldPlugin::make()
-            ])
-            ->plugins([
                 FilamentShieldPlugin::make()
                     ->gridColumns([
                         'default' => 1,
@@ -109,6 +106,6 @@ class AdminPanelProvider extends PanelProvider
                         'default' => 1,
                         'sm' => 2,
                     ]),
-            ]);;
+            ]);
     }
 }

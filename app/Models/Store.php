@@ -57,4 +57,19 @@ class Store extends Model
     {
         return $this->hasMany(Report::class);
     }
+
+    public function productGroups(): HasMany
+    {
+        return $this->hasMany(ProductGroup::class);
+    }
+
+    public function transactions(): HasMany
+    {
+        return $this->hasMany(Transaction::class);
+    }
+
+    public function cashierShifts(): HasMany
+    {
+        return $this->hasMany(CashierShift::class);
+    }
 }

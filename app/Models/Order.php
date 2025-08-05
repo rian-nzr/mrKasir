@@ -23,6 +23,7 @@ class Order extends Model
         'note',
         'payment_method_id',
         'store_id',
+        'cashier_shift_id',
     ];
 
     protected $casts = [
@@ -49,6 +50,11 @@ class Order extends Model
     public function store(): BelongsTo
     {
         return $this->belongsTo(Store::class);
+    }
+
+    public function cashierShift(): BelongsTo
+    {
+        return $this->belongsTo(CashierShift::class);
     }
 
     protected static function booted(): void
