@@ -26,7 +26,7 @@ class ListOrders extends ListRecords
         $items = OrderProduct::with('product')->where('order_id', $order_id)->get();
 
         $this->dispatch('doPrintReceipt', 
-            store: Setting::first(),
+            store: Setting::current(),
             order: $order,
             items: $items,
             date: $order->created_at->format('d-m-Y H:i:s')

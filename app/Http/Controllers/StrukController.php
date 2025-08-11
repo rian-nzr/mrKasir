@@ -14,7 +14,7 @@ class StrukController extends Controller
     {
         $order = Order::findOrFail($orderId);
         $order_items = OrderProduct::where('order_id', $order->id)->get();
-        $setting = Setting::first();
+        $setting = Setting::current();
 
         return view('struk', compact('order', 'order_items', 'setting'));
     }

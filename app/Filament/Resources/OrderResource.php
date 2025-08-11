@@ -169,7 +169,7 @@ class OrderResource extends Resource implements HasShieldPermissions
             ->actions([
                 Action::make('Print')
                     ->label('Cetak')
-                    ->hidden(fn () => Setting::first()->value('print_via_mobile')) // Ambil nilai dari model lain
+                    ->hidden(fn () => optional(Setting::current())->print_via_mobile) // Ambil nilai dari setting toko
                     ->action(function (Order $record) {
                         $directPrint = app(DirectPrintService::class);
                         $directPrint->print($record->id);
@@ -178,7 +178,7 @@ class OrderResource extends Resource implements HasShieldPermissions
                     ->color('amber'),
                 Action::make('Print')
                     ->label('Cetak')
-                    ->hidden(fn () => Setting::first()->value('print_via_mobile') == false) // Ambil nilai dari model lain
+                    ->hidden(fn () => optional(Setting::current())->print_via_mobile == false) // Ambil nilai dari setting toko
                     ->action(fn ($record,$livewire) => $livewire->printOrder($record->id))
                     ->icon('heroicon-o-printer')
                     ->color('amber'),
