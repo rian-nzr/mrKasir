@@ -19,7 +19,11 @@ class DirectPrintService
         try {
             $order = Order::findOrFail($orderToPrint);
             $order_items = OrderProduct::where('order_id', $order->id)->get();
-            $setting = Setting::first();
+            $setting = Setting::current();
+
+            if (!$setting) {
+                throw new \Exception('Setting toko belum dikonfigurasi');
+            }
 
             // Sesuaikan nama printer Anda
             $connector = new WindowsPrintConnector($setting->name_printer);

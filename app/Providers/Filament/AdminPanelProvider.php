@@ -79,7 +79,7 @@ class AdminPanelProvider extends PanelProvider
                                 'change_store' => MenuItem::make()
                     ->label('Ganti Toko')
                     ->icon('heroicon-o-arrow-path')
-                    ->url('/store/change')
+                    ->url('/store/select')
                     ->visible(fn() => auth()->user()?->isSuperAdmin())
                     ->color('primary')
                     ->sort(-0.5),

@@ -15,6 +15,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'ensure.store.selected' => \App\Http\Middleware\EnsureStoreSelected::class,
             'store' => \App\Http\Middleware\StoreMiddleware::class,
+            'check.cashier.shift' => \App\Http\Middleware\CheckCashierShift::class,
         ]);
         
         // Apply store middleware globally for web routes

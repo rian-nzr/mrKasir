@@ -16,7 +16,7 @@ class ReportObserver
      */
     public function creating(Report $report): void
     {       
-            $logo = Setting::first()->image;
+            $logo = optional(Setting::current())->image;
             $timestamp = now()->format('YmdHis');
 
             // Buat nama file dan path
@@ -74,7 +74,7 @@ class ReportObserver
      */
     public function updated(Report $report): void
     {
-            $logo = Setting::first()->image;
+            $logo = optional(Setting::current())->image;
             // Buat nama file dan path
             $path = 'reports/' . $report->name;
 

@@ -5,10 +5,12 @@ namespace App\Filament\Resources;
 use Filament\Forms;
 use Filament\Tables;
 use App\Models\Setting;
+use App\Models\Store;
 use Filament\Forms\Get;
 use Filament\Forms\Form;
 use Filament\Tables\Table;
 use Filament\Resources\Resource;
+use Illuminate\Database\Eloquent\Builder;
 use App\Filament\Resources\SettingResource\Pages;
 use BezhanSalleh\FilamentShield\Contracts\HasShieldPermissions;
 
@@ -39,6 +41,31 @@ class SettingResource extends Resource implements HasShieldPermissions
     {
         return $form
             ->schema([
+                Forms\Components\Section::make('Informasi Toko')
+                ->schema([
+                    Forms\Components\Select::make('store_id')
+                        ->label('Toko')
+                        ->options(Store::where('is_active', true)->pluck('name', 'id'))
+                        ->required()
+                        ->default(function () {
+                            $user = auth()->user();
+                            if ($user->hasRole('super_admin')) {
+                                return session('selected_store_id');
+                            }
+                            return $user->store_id;
+                        })
+                        ->disabled(function () {
+                            $user = auth()->user();
+                            return !$user->hasRole('super_admin');
+                        })
+                        ->helperText(function () {
+                            $user = auth()->user();
+                            if (!$user->hasRole('super_admin')) {
+                                return 'Toko ditentukan berdasarkan akun Anda';
+                            }
+                            return null;
+                        }),
+                ]),
                 Forms\Components\Section::make('Profil Toko')
                 ->schema([
                 Forms\Components\TextInput::make('shop')
@@ -86,6 +113,10 @@ class SettingResource extends Resource implements HasShieldPermissions
     {
         return $table
             ->columns([
+                Tables\Columns\TextColumn::make('store.name')
+                    ->label('Toko')
+                    ->sortable()
+                    ->searchable(),
                 Tables\Columns\ImageColumn::make('image')
                     ->circular()
                     ->label('Logo Toko'),
@@ -123,7 +154,21 @@ class SettingResource extends Resource implements HasShieldPermissions
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
-            ]);
+            ])
+            ->modifyQueryUsing(function (Builder $query) {
+                $user = auth()->user();
+                
+                if ($user->hasRole('super_admin')) {
+                    // Super admin bisa lihat semua atau filter berdasarkan store yang dipilih
+                    if (session('selected_store_id')) {
+                        return $query->where('store_id', session('selected_store_id'));
+                    }
+                    return $query; // Tampilkan semua
+                } else {
+                    // User biasa hanya bisa lihat setting toko mereka
+                    return $query->where('store_id', $user->store_id);
+                }
+            });
     }
 
     public static function getRelations(): array
@@ -142,6 +187,17 @@ class SettingResource extends Resource implements HasShieldPermissions
 
     public static function canCreate(): bool
     {
-        return Setting::count() < 1;
+        $user = auth()->user();
+        
+        if ($user->hasRole('super_admin')) {
+            // Super admin bisa buat setting jika store yang dipilih belum punya setting
+            if (session('selected_store_id')) {
+                return !Setting::where('store_id', session('selected_store_id'))->exists();
+            }
+            return true; // Bisa buat setting untuk store manapun
+        } else {
+            // User biasa bisa buat setting jika toko mereka belum punya
+            return !Setting::where('store_id', $user->store_id)->exists();
+        }
     }
 }

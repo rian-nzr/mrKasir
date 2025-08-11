@@ -9,6 +9,7 @@ use App\Models\Setting;
 use Livewire\Component;
 use App\Models\Category;
 use App\Models\Transaction;
+use App\Models\CashierShift;
 
 use Filament\Forms\Form;
 use App\Models\OrderProduct;
@@ -55,7 +56,10 @@ class Pos extends Component implements HasForms
 
     public function mount()
     {
-        $settings = Setting::first();
+        // Check if user has an active cashier shift
+        $this->checkCashierShift();
+
+        $settings = Setting::current();
         $this->print_via_mobile = $settings->print_via_mobile ?? $this->print_via_mobile = false;
 
         // Mengambil data kategori dan menambahkan data 'Semua' sebagai pilihan pertama
@@ -68,6 +72,89 @@ class Pos extends Component implements HasForms
         }
 
         $this->payment_methods = PaymentMethod::all();
+    }
+
+    /**
+     * Check if user has an active cashier shift
+     */
+    private function checkCashierShift()
+    {
+        $user = auth()->user();
+        
+        // Get store_id based on user type
+        $storeId = null;
+        if ($user->hasRole('super_admin')) {
+            // For super admin, check if there's any active shift or use selected store
+            $storeId = session('selected_store_id');
+            
+            // If no specific store selected, check if there's any active shift
+            if (!$storeId) {
+                $anyActiveShift = CashierShift::where('status', CashierShift::STATUS_OPEN)->exists();
+                if ($anyActiveShift) {
+                    return; // Allow access if any shift is active
+                }
+            }
+        } else {
+            // For regular users, use their assigned store
+            $storeId = $user->store_id;
+        }
+
+        if (!$storeId) {
+            Notification::make()
+                ->title('Store Belum Dipilih')
+                ->body('Silakan pilih store terlebih dahulu atau buka kasir.')
+                ->warning()
+                ->persistent()
+                ->send();
+
+            return $this->redirect('/admin');
+        }
+
+        $activeShift = CashierShift::where('store_id', $storeId)
+            ->where('status', CashierShift::STATUS_OPEN)
+            ->first();
+
+        if (!$activeShift) {
+            Notification::make()
+                ->title('Kasir Belum Dibuka')
+                ->body('Shift kasir belum dibuka. Silakan buka shift kasir terlebih dahulu.')
+                ->danger()
+                ->persistent()
+                ->send();
+
+            return $this->redirect('/admin');
+        }
+    }
+
+    /**
+     * Get current active cashier shift
+     */
+    public function getCurrentShift()
+    {
+        $user = auth()->user();
+        
+        // Get store_id based on user type
+        $storeId = null;
+        if ($user->hasRole('super_admin')) {
+            // For super admin, use selected store or find any active shift
+            $storeId = session('selected_store_id');
+            
+            // If no specific store selected, get any active shift
+            if (!$storeId) {
+                return CashierShift::where('status', CashierShift::STATUS_OPEN)->first();
+            }
+        } else {
+            // For regular users, use their assigned store
+            $storeId = $user->store_id;
+        }
+
+        if (!$storeId) {
+            return null;
+        }
+
+        return CashierShift::where('store_id', $storeId)
+            ->where('status', CashierShift::STATUS_OPEN)
+            ->first();
     }
 
     public function render()
@@ -196,6 +283,16 @@ class Pos extends Component implements HasForms
 
     public function addToOrder($productId)
     {
+        // Check if cashier shift is still active
+        if (!$this->getCurrentShift()) {
+            Notification::make()
+                ->title('Shift Kasir Tidak Aktif')
+                ->body('Shift kasir sudah ditutup. Tidak dapat menambahkan produk.')
+                ->danger()
+                ->send();
+            return $this->redirect('/admin');
+        }
+
         $product = Product::find($productId);
 
         if ($product) {
@@ -376,6 +473,17 @@ class Pos extends Component implements HasForms
 
     public function checkout()
     {
+        // Check if cashier shift is still active before processing
+        $activeShift = $this->getCurrentShift();
+        if (!$activeShift) {
+            Notification::make()
+                ->title('Shift Kasir Tidak Aktif')
+                ->body('Shift kasir sudah ditutup. Tidak dapat melakukan checkout.')
+                ->danger()
+                ->send();
+            return $this->redirect('/admin');
+        }
+
         // Convert paid_amount to numeric if it's a string
         if (is_string($this->paid_amount)) {
             $this->paid_amount = (float) $this->paid_amount;
@@ -501,7 +609,7 @@ class Pos extends Component implements HasForms
         $items = OrderProduct::with('product')->where('order_id', $order->id)->get();
 
         $this->dispatch('doPrintReceipt', 
-            store: Setting::first(),
+            store: Setting::current(),
             order: $order,
             items: $items,
             date: $order->created_at->format('d-m-Y H:i:s')
@@ -516,7 +624,7 @@ class Pos extends Component implements HasForms
         $items = OrderProduct::with('product')->where('order_id', $order_id)->get();
 
         $this->dispatch('doPrintReceipt', 
-            store: Setting::first(),
+            store: Setting::current(),
             order: $order,
             items: $items,
             date: $order->created_at->format('d-m-Y H:i:s')
@@ -588,6 +696,16 @@ class Pos extends Component implements HasForms
 
     public function saveTransaction()
     {
+        // Check if cashier shift is still active
+        if (!$this->getCurrentShift()) {
+            Notification::make()
+                ->title('Shift Kasir Tidak Aktif')
+                ->body('Shift kasir sudah ditutup. Tidak dapat melakukan transaksi.')
+                ->danger()
+                ->send();
+            return $this->redirect('/admin');
+        }
+
         try {
             // Convert formatted rupiah values to numeric before processing
             $this->normalizeTransactionData();

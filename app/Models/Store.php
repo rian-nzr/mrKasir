@@ -72,4 +72,9 @@ class Store extends Model
     {
         return $this->hasMany(CashierShift::class);
     }
+
+    public function setting(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(Setting::class);
+    }
 }
