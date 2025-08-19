@@ -425,30 +425,34 @@ class CashierShiftService
 
         // Opening balance breakdown
         if ($shift->opening_balance_snapshot) {
-            $openingSnapshot = is_string($shift->opening_balance_snapshot) 
-                ? json_decode($shift->opening_balance_snapshot, true)
-                : $shift->opening_balance_snapshot;
+            // Model casts snapshots to array, so just ensure array type
+            $openingSnapshot = (array) $shift->opening_balance_snapshot;
             
             $paymentMethods = \App\Models\PaymentMethod::where('store_id', $shift->store_id)->get();
             $data['opening_balance_breakdown'] = [];
             
-            foreach ($paymentMethods as $method) {
-                $balance = $openingSnapshot[$method->id] ?? 0;
-                // Ensure balance is numeric
-                if (is_array($balance)) {
-                    $balance = 0;
+                // Normalize into map keyed by payment method id for reliable lookup
+                $openingMap = [];
+                foreach ($openingSnapshot as $entry) {
+                    if (is_array($entry) && isset($entry['id'])) {
+                        $openingMap[$entry['id']] = $entry['balance'] ?? 0;
+                    }
                 }
-                $balance = (float)$balance;
-                
-                $data['opening_balance_breakdown'][] = [
-                    'name' => $method->name,
-                    'type' => $method->is_cash ? 'cash' : ($method->is_ewallet ? 'ewallet' : 'card'),
-                    'balance' => $balance,
-                    'formatted_amount' => 'Rp ' . number_format($balance, 0, ',', '.'),
-                    'icon' => $method->is_cash ? '💵' : ($method->is_ewallet ? '📱' : '💳'),
-                    'color' => $method->is_cash ? '#10b981' : ($method->is_ewallet ? '#3b82f6' : '#8b5cf6'),
-                    'note' => $method->is_cash ? 'Input Kasir' : 'Saldo Sistem'
-                ];
+
+                foreach ($paymentMethods as $method) {
+                    // Prefer snapshot value, fallback to current payment method balance
+                    $balance = $openingMap[$method->id] ?? ($method->balance ?? 0);
+                    $balance = (float)$balance;
+
+                    $data['opening_balance_breakdown'][] = [
+                        'name' => $method->name,
+                        'type' => $method->is_cash ? 'cash' : ($method->is_ewallet ? 'ewallet' : 'card'),
+                        'balance' => $balance,
+                        'formatted_amount' => 'Rp ' . number_format($balance, 0, ',', '.'),
+                        'icon' => $method->is_cash ? '💵' : ($method->is_ewallet ? '📱' : '💳'),
+                        'color' => $method->is_cash ? '#10b981' : ($method->is_ewallet ? '#3b82f6' : '#8b5cf6'),
+                        'note' => $method->is_cash ? 'Input Kasir' : 'Saldo Sistem'
+                    ];
             }
         }
 
@@ -466,13 +470,9 @@ class CashierShiftService
 
             // Closing balance breakdown
             if ($shift->closing_balance_snapshot) {
-                $closingSnapshot = is_string($shift->closing_balance_snapshot) 
-                    ? json_decode($shift->closing_balance_snapshot, true)
-                    : $shift->closing_balance_snapshot;
-                
-                $openingSnapshot = is_string($shift->opening_balance_snapshot) 
-                    ? json_decode($shift->opening_balance_snapshot, true)
-                    : $shift->opening_balance_snapshot;
+                // Model casts snapshots to array, so ensure array type
+                $closingSnapshot = (array) $shift->closing_balance_snapshot;
+                $openingSnapshot = (array) $shift->opening_balance_snapshot;
 
                 $paymentMethods = \App\Models\PaymentMethod::where('store_id', $shift->store_id)->get();
                 $data['closing_balance_breakdown'] = [];
@@ -487,6 +487,29 @@ class CashierShiftService
                     
                     $openingBalance = (float)$openingBalance;
                     $closingBalance = (float)$closingBalance;
+                        // Build maps for reliable lookup
+                        $openingArr = (array) $shift->opening_balance_snapshot;
+                        $closingArr = (array) $shift->closing_balance_snapshot;
+
+                        $openingMap = [];
+                        if (is_array($openingArr)) {
+                            foreach ($openingArr as $e) {
+                                if (is_array($e) && isset($e['id'])) $openingMap[$e['id']] = $e['balance'] ?? 0;
+                            }
+                        }
+
+                        $closingMap = [];
+                        if (is_array($closingArr)) {
+                            foreach ($closingArr as $e) {
+                                if (is_array($e) && isset($e['id'])) $closingMap[$e['id']] = $e['balance'] ?? 0;
+                            }
+                        }
+
+                        $openingBalance = $openingMap[$method->id] ?? 0;
+                        $closingBalance = $closingMap[$method->id] ?? 0;
+                    
+                        $openingBalance = (float)$openingBalance;
+                        $closingBalance = (float)$closingBalance;
                     $difference = $closingBalance - $openingBalance;
                     
                     // Calculate transactions total for this payment method
@@ -513,6 +536,13 @@ class CashierShiftService
         }
 
         return $data;
+    }
+
+    // TEMPORARY: expose balance tracking for debugging in tinker
+    public function debugGetBalanceTrackingData(int $shiftId): array
+    {
+        $shift = CashierShift::withoutGlobalScopes()->findOrFail($shiftId);
+        return $this->getBalanceTrackingData($shift);
     }
 
     private function generateRecommendations(array $report): array

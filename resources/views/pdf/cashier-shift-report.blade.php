@@ -182,7 +182,10 @@
     </head>
     <body>
         <div class="header">
-            <h1>📊 LAPORAN SHIFT KASIR</h1>
+            <h1>
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:8px"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><path d="M8 14v3"></path><path d="M12 10v7"></path><path d="M16 6v11"></path></svg>
+                LAPORAN SHIFT KASIR
+            </h1>
             <h2>{{ $shift->store->name ?? 'Toko' }}</h2>
             <div class="shift-info">
                 <strong>Shift #{{ $shift->shift_number }}</strong> |
@@ -195,32 +198,35 @@
         </div>
         <!-- INFORMASI SHIFT -->
         <div class="section">
-            <div class="section-title">📋 INFORMASI SHIFT</div>
+            <div class="section-title">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:8px"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><path d="M16 2v4"></path><path d="M8 2v4"></path><path d="M3 10h18"></path></svg>
+                INFORMASI SHIFT
+            </div>
             <div class="info-grid">
                 <div class="info-row">
-                    <div class="info-label">👤 Kasir</div>
+                    <div class="info-label"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg> Kasir</div>
                     <div class="info-value">
                         {{ $shift->user->name ?? 'N/A' }}
                     </div>
                 </div>
                 <div class="info-row">
-                    <div class="info-label">🏪 Toko</div>
+                    <div class="info-label"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px"><path d="M3 9l9-6 9 6"></path><path d="M21 9v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9"></path></svg> Toko</div>
                     <div class="info-value">
                         {{ $shift->store->name ?? 'N/A' }}
                     </div>
                 </div>
                 <div class="info-row">
-                    <div class="info-label">🆔 No. Shift</div>
+                    <div class="info-label"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><path d="M7 7h10v10H7z"></path></svg> No. Shift</div>
                     <div class="info-value">{{ $shift->shift_number }}</div>
                 </div>
                 <div class="info-row">
-                    <div class="info-label">📅 Tanggal</div>
+                    <div class="info-label"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><path d="M16 2v4"></path><path d="M8 2v4"></path></svg> Tanggal</div>
                     <div class="info-value">
                         {{ $shift->created_at->format('d/m/Y') }}
                     </div>
                 </div>
                 <div class="info-row">
-                    <div class="info-label">🕐 Jam Buka</div>
+                    <div class="info-label"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v6l4 2"></path></svg> Jam Buka</div>
                     <div class="info-value">
                         {{ $shift->opened_at ? $shift->opened_at->format('H:i:s') : 'Belum dibuka' }}
                     </div>
@@ -240,7 +246,7 @@
                 </div>
                 @endif
                 <div class="info-row">
-                    <div class="info-label">📍 Status</div>
+                    <div class="info-label"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 1 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg> Status</div>
                     <div class="info-value">
                         @if($shift->location)
                         <span
@@ -256,7 +262,7 @@
         @if(isset($balance_tracking))
         <!-- SALDO AWAL -->
         <div class="section">
-            <div class="section-title">💰 SALDO AWAL KASIR</div>
+            <div class="section-title"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:8px"><path d="M21 8v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8"></path><rect x="2" y="3" width="20" height="5" rx="2"></rect></svg> SALDO AWAL KASIR</div>
             <div class="summary-grid">
                 <div class="summary-row">
                     <div class="summary-label">💵 Total Saldo Awal</div>
@@ -271,12 +277,12 @@
             @if(isset($balance_tracking['opening_balance_breakdown']) &&
             is_array($balance_tracking['opening_balance_breakdown']))
             <div class="section">
-                <div class="section-title">📊 BREAKDOWN SALDO AWAL</div>
+                <div class="section-title"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:8px"><path d="M3 3v18h18"></path><path d="M7 13v6"></path><path d="M12 9v10"></path><path d="M17 5v14"></path></svg> BREAKDOWN SALDO AWAL</div>
                 <table class="table">
                     <thead>
                         <tr>
-                            <th>💳 Metode Pembayaran</th>
-                            <th>💰 Jumlah</th>
+                            <th><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px"></svg> Metode Pembayaran</th>
+                            <th><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px"></svg> Jumlah</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -344,7 +350,7 @@
                 </div>
             </div>
             <div class="section">
-                <div class="section-title">📊 BREAKDOWN SALDO AKHIR</div>
+                <div class="section-title"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:8px"><path d="M3 3v18h18"></path><path d="M7 13v6"></path><path d="M12 9v10"></path><path d="M17 5v14"></path></svg> BREAKDOWN SALDO AKHIR</div>
                 <table class="table">
                     <thead>
                         <tr>
@@ -388,10 +394,10 @@
         @endif @endif
         <!-- RINGKASAN PENJUALAN -->
         <div class="section">
-            <div class="section-title">📈 RINGKASAN PENJUALAN</div>
+            <div class="section-title"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:8px"><path d="M3 3v18h18"></path><path d="M7 13v6"></path><path d="M12 9v10"></path><path d="M17 5v14"></path></svg> RINGKASAN PENJUALAN</div>
             <div class="summary-grid">
                 <div class="summary-row">
-                    <div class="summary-label">🛒 Total Transaksi</div>
+                    <div class="summary-label"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px"></svg> Total Transaksi</div>
                     <div class="summary-value">
                         {{
                             $sales_summary["total_transactions"] ?? 0
@@ -400,7 +406,7 @@
                     </div>
                 </div>
                 <div class="summary-row">
-                    <div class="summary-label">📦 Total Item Terjual</div>
+                    <div class="summary-label"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px"></svg> Total Item Terjual</div>
                     <div class="summary-value">
                         {{ $sales_summary["total_items"] ?? 0 }} item
                     </div>
@@ -443,7 +449,7 @@
         </div>
         @if(isset($payment_breakdown) && count($payment_breakdown) > 0)
         <div class="section">
-            <div class="section-title">💳 BREAKDOWN PEMBAYARAN</div>
+            <div class="section-title"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:8px"><rect x="2" y="6" width="20" height="12" rx="2"></rect><path d="M2 10h20"></path></svg> BREAKDOWN PEMBAYARAN</div>
             <table class="table">
                 <thead>
                     <tr>
@@ -476,8 +482,8 @@
             <div class="section-title">🏆 PRODUK TERLARIS (Top 20)</div>
             <table class="table">
                 <thead>
-                    <tr>
-                        <th>🥇 Ranking</th>
+                        <tr>
+                        <th>Ranking</th>
                         <th>📦 Nama Produk</th>
                         <th>💰 Harga Satuan</th>
                         <th>🔢 Qty Terjual</th>
@@ -518,7 +524,7 @@
         </div>
         @endif @if(isset($cash_flow_history) && count($cash_flow_history) > 0)
         <div class="section">
-            <div class="section-title">💹 RIWAYAT ARUS KAS</div>
+            <div class="section-title"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:8px"><path d="M3 3v18h18"></path><path d="M3 12h18"></path></svg> RIWAYAT ARUS KAS</div>
             <table class="table">
                 <thead>
                     <tr>
@@ -555,7 +561,7 @@
         </div>
         @endif @if(isset($recommendations) && count($recommendations) > 0)
         <div class="section">
-            <div class="section-title">💡 REKOMENDASI & INSIGHTS</div>
+            <div class="section-title"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:8px"><path d="M9 18h6"></path><path d="M10 14a4 4 0 1 1 4 0"></path><path d="M12 2v4"></path></svg> REKOMENDASI & INSIGHTS</div>
             @foreach($recommendations as $rec)
             <div class="highlight">
                 <strong>{{ $rec["title"] ?? "Rekomendasi" }}</strong
@@ -567,26 +573,16 @@
         @endif
         <div class="footer">
             <p>
-                <strong
-                    >📄 Laporan ini dibuat secara otomatis pada
-                    {{ now()->format('d/m/Y H:i:s') }}</strong
-                >
+                <strong>Laporan ini dibuat secara otomatis pada {{ now()->format('d/m/Y H:i:s') }}</strong>
             </p>
             <p>
-                {{ config("app.name", "POS System") }} - Sistem Manajemen Kasir
-                v2.0
+                {{ config("app.name", "POS System") }} - Sistem Manajemen Kasir v2.0
             </p>
             <p>
-                🔒 Dokumen ini bersifat rahasia dan hanya untuk keperluan
-                internal
+                Dokumen ini bersifat rahasia dan hanya untuk keperluan internal
             </p>
             @if($shift->status === 'active')
-            <p style="color: #dc2626">
-                <strong
-                    >⚠️ PERHATIAN: Shift masih aktif - Data dapat
-                    berubah</strong
-                >
-            </p>
+            <p style="color: #dc2626"><strong>PERHATIAN: Shift masih aktif - Data dapat berubah</strong></p>
             @endif
         </div>
     </body>

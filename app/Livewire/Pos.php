@@ -523,21 +523,24 @@ class Pos extends Component implements HasForms
             ->danger()
             ->send();
         } else {
-            // Ambil shift aktif untuk auto-assignment
-            $activeShift = \App\Models\CashierShift::where('store_id', auth()->user()->store_id)
-                ->where('status', \App\Models\CashierShift::STATUS_OPEN)
-                ->first();
-            
-            // Buat order
-            $order = Order::create([
-                'name' => $this->name,
-                'total_price' => $total,
-                'paid_amount' => $this->paid_amount,
-                'change_amount' => $this->change_amount,
-                'payment_method_id' => $payment_method_id_temp,
-                'store_id' => auth()->user()->store_id,
-                'cashier_shift_id' => $activeShift ? $activeShift->id : null,
-            ]);
+                // Use the active shift already validated earlier for auto-assignment.
+                // This avoids relying on auth()->user()->store_id which may be null
+                // (e.g., super_admin with selected store in session).
+                $shiftToAssign = $activeShift ?? $this->getCurrentShift();
+
+                // Determine store id fallback: prefer shift store, then auth user, then session
+                $storeIdToAssign = $shiftToAssign ? $shiftToAssign->store_id : (auth()->user()->store_id ?? session('selected_store_id'));
+
+                // Buat order
+                $order = Order::create([
+                    'name' => $this->name,
+                    'total_price' => $total,
+                    'paid_amount' => $this->paid_amount,
+                    'change_amount' => $this->change_amount,
+                    'payment_method_id' => $payment_method_id_temp,
+                    'store_id' => $storeIdToAssign,
+                    'cashier_shift_id' => $shiftToAssign ? $shiftToAssign->id : null,
+                ]);
             
             // Buat order products
             foreach($this->order_items as $item) {
