@@ -156,6 +156,11 @@
             @endif
         </div>
         @endif
+         <form wire:submit="checkout">
+            {{$this->form}}
+            <x-filament::button type="submit" class="w-full h-12 bg-primary mt-6 text-white py-2 rounded-lg">Checkout
+            </x-filament::button>
+        </form>
     </div>
 
     <div class="md:col-span-1 bg-white dark:bg-gray-800 shadow-md rounded-lg p-6 hidden md:block">

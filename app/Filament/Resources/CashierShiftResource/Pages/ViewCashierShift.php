@@ -20,9 +20,13 @@ class ViewCashierShift extends ViewRecord
     public function mount(int | string $record): void
     {
         parent::mount($record);
-        
-        // Ensure we always have fresh data with relationships
-        $this->record = $this->record->fresh(['user', 'store', 'orders', 'cashOuts']);
+
+        // Ensure we always have fresh data with relationships.
+        // Use withoutGlobalScopes() to avoid StoreScope or other global scopes
+        // affecting the data shown in the admin UI (fixes mismatches vs DB).
+        $this->record = \App\Models\CashierShift::withoutGlobalScopes()
+            ->with(['user', 'store', 'orders', 'cashOuts'])
+            ->find($this->record->id);
     }
 
     protected function getHeaderActions(): array
